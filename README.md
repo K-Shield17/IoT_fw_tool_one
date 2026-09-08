@@ -2,6 +2,14 @@
 
 IoT firmware static-analysis pipeline built by **selecting only the required functionality from the three supplied upstream tools**, rather than vendoring each complete project.
 
+# How to run
+```bash
+git clone https://github.com/K-Shield17/IoT_fw_tool_one.git
+cd IoT_fw_tool_one/
+chmod +x build.sh run.sh scripts/*.sh tools/firmwalker-lite/firmwalker-lite.sh
+./run.sh scan 펌웨어파일경로 -o results
+```
+
 ## Pipeline
 
 `Firmware -> Binwalk-lite scan/extract/recursive -> RootFS -> Firmwalker-lite -> Checksec-lite -> normalized findings -> risk correlation -> JSON/HTML report`
