@@ -2,7 +2,7 @@
 
 IoT firmware static-analysis pipeline built by **selecting only the required functionality from the three supplied upstream tools**, rather than vendoring each complete project.
 
-# How to run
+# How do I use it?
 ```bash
 git clone https://github.com/K-Shield17/IoT_fw_tool_one.git
 cd IoT_fw_tool_one/
