@@ -27,6 +27,10 @@ pub struct ExtractionError;
 pub type InternalExtractor = fn(&[u8], usize, Option<&String>) -> ExtractionResult;
 
 /// Enum to define either an Internal or External extractor type
+// Rust may warn when derived equality/ordering reaches an internal function pointer.
+// This type is inherited from upstream Binwalk and the comparison is not used by
+// this project as a security decision, so suppress only this specific lint here.
+#[allow(unpredictable_function_pointer_comparisons)]
 #[derive(Debug, Default, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ExtractorType {
     External(String),
