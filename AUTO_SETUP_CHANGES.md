@@ -4,7 +4,7 @@ This revision adds a preflight/bootstrap layer without replacing the selected up
 
 ## Added
 
-- `scripts/bootstrap.sh`
+- `setup/bootstrap.sh`
   - installs missing Ubuntu packages with `apt`;
   - installs Rust/Cargo with rustup only when absent;
   - installs Go when absent;
@@ -14,7 +14,7 @@ This revision adds a preflight/bootstrap layer without replacing the selected up
   - creates a `sasquatch` compatibility wrapper backed by `unsquashfs` when real sasquatch is absent;
   - validates essential commands after setup.
 
-- `scripts/check_environment.sh`
+- `setup/check_environment.sh`
   - displays which compiler/extractor commands are currently available and their resolved paths.
 
 ## Changed

@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Installing/building prerequisites here makes a fresh clone usable with one command.
-"$ROOT/scripts/bootstrap.sh" build
+"$ROOT/setup/bootstrap.sh" build
 # shellcheck disable=SC1090
 [[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 export PATH="$ROOT/tools/bin:$ROOT/.deps/venv/bin:$PATH"

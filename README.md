@@ -2,14 +2,6 @@
 
 IoT firmware static-analysis pipeline built by **selecting only the required functionality from the three supplied upstream tools**, rather than vendoring each complete project.
 
-# How do I use it?
-```bash
-git clone https://github.com/K-Shield17/IoT_fw_tool_one.git
-cd IoT_fw_tool_one/
-chmod +x build.sh run.sh scripts/*.sh tools/firmwalker-lite/firmwalker-lite.sh
-./run.sh scan 펌웨어파일경로 -o results
-```
-
 ## Pipeline
 
 `Firmware -> Binwalk-lite scan/extract/recursive -> RootFS -> Firmwalker-lite -> Checksec-lite -> normalized findings -> risk correlation -> JSON/HTML report`
@@ -17,7 +9,7 @@ chmod +x build.sh run.sh scripts/*.sh tools/firmwalker-lite/firmwalker-lite.sh
 ## Selected upstream functionality
 
 ### Binwalk 3.1.0 (Rust)
-Kept only the signature/extraction path needed for common embedded Linux firmware: gzip/xz/tar/squashfs/lzma/bzip2/uImage/cpio/Linux kernel/zstd/zip/JFFS2/ROMFS/UBI/YAFFS/CRAMFS/ext/TP-Link/TRX/SEAMA/Realtek/zlib. The original parser/extractor/structure source files for these formats are copied unchanged. Removed entropy graphing, stdin, carve-only mode, generic listing/display CLI, unrelated signatures and extractors. The small `main.rs` only performs scan + extraction + recursive extraction.
+Kept only the signature/extraction path needed for common embedded Linux firmware: gzip/xz/tar/squashfs/lzma/bzip2/uImage/cpio/Linux kernel/zstd/zip/JFFS2/ROMFS/UBI/YAFFS/CRAMFS/ext/FAT/MBR/TP-Link/TRX/SEAMA/Realtek/zlib. The original parser/extractor/structure source files for these formats are copied unchanged. Removed entropy graphing, stdin, carve-only mode, generic listing/display CLI, unrelated signatures and extractors. The small `main.rs` only performs scan + extraction + recursive extraction.
 
 ### Firmwalker (Bash)
 Kept password/hash, SSL/SSH material, config/database files, sensitive patterns, web servers, important network binaries, IPs and URLs. Removed Shodan lookup, shell-script/bin-file inventory, email enumeration, and generic output-only sections that do not contribute to the firmware security report. Search loops are derived directly from the supplied `firmwalker.sh`; the original is preserved as `firmwalker.original.sh`.
@@ -27,12 +19,16 @@ Kept the supplied original implementations for RELRO, Canary, NX, PIE, RPATH, RU
 
 ## Build
 
-Requirements: Rust/Cargo, Go 1.25+, `jq`, `file`, plus system utilities required by the retained Binwalk extractors (for example `unsquashfs`, `7z`, `ubireader_extract_files`, depending on firmware format).
+Requirements: Rust/Cargo, Go 1.25+, `jq`, `file`, plus system utilities required by the retained Binwalk extractors (for example `unsquashfs`, `7z`, `tsk_recover` (Sleuth Kit), `ubireader_extract_files`, depending on firmware format).
 
 ```bash
-chmod +x build.sh run.sh scripts/*.sh tools/firmwalker-lite/firmwalker-lite.sh
+chmod +x build.sh run.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
 ./build.sh
 ```
+
+### MBR/FAT recursive extraction
+
+The retained Binwalk path now includes the upstream MBR and FAT signature/parser chain. MBR partitions are carved with the upstream internal MBR extractor, then recursively rescanned. FAT/ext filesystems are recovered with the retained `tsk_recover` extractor. This restores the extraction path needed for disk-style firmware images such as `MBR -> FAT32 partition -> boot files` while preserving the existing SquashFS extraction path.
 
 ## Run
 
@@ -46,7 +42,11 @@ For an already extracted filesystem:
 ./run.sh analyze-rootfs ./rootfs -o results
 ```
 
-Outputs: `results/report.json`, `results/report.html`, and raw evidence under `results/raw/`.
+`-o` is the **parent output directory**. Each input gets its own result directory, so later analyses do not overwrite earlier ones.
+
+Example: analyzing `firmware.bin` with `-o results` creates `results/firmware/`. If that name already exists, the next run is saved as `results/firmware_2/`, then `results/firmware_3/`, and so on.
+
+Outputs are stored under the per-input directory, for example: `results/firmware/report.json`, `results/firmware/report.html`, and `results/firmware/raw/`.
 
 ## Automatic dependency setup
 
@@ -64,7 +64,7 @@ Outputs: `results/report.json`, `results/report.html`, and raw evidence under `r
 Normal use on a fresh Ubuntu/AttifyOS machine is therefore simply:
 
 ```bash
-chmod +x build.sh run.sh scripts/*.sh tools/firmwalker-lite/firmwalker-lite.sh
+chmod +x build.sh run.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
 ./run.sh scan /absolute/or/relative/path/to/firmware.bin -o results
 ```
 
@@ -73,7 +73,7 @@ The first run may ask for the `sudo` password while installing missing Ubuntu pa
 To inspect the current environment without starting an analysis:
 
 ```bash
-./scripts/check_environment.sh
+./setup/check_environment.sh
 ```
 
 ### SquashFS note
@@ -100,7 +100,7 @@ Analyst-oriented HTML/JSON report
 
 A missing Canary, disabled PIE, or Partial RELRO is no longer reported as a standalone confirmed vulnerability. The report prioritizes correlated cases such as network-service exposure plus multiple hardening weaknesses, weak password hashes, or broadly readable key material. Kernel modules and ordinary shared-library hardening observations remain available in the evidence appendix without flooding the main findings.
 
-Generated intermediate files are stored under `results/raw/`:
+Generated intermediate files are stored under each target directory, e.g. `results/<target>/raw/`:
 
 - `evidence.jsonl`
 - `assets.jsonl`
@@ -109,5 +109,5 @@ Generated intermediate files are stored under `results/raw/`:
 
 The final outputs remain:
 
-- `results/report.json`
-- `results/report.html`
+- `results/<target>/report.json`
+- `results/<target>/report.html`
