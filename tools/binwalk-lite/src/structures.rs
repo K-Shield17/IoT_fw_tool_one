@@ -20,3 +20,6 @@ pub mod tplink;
 pub mod trx;
 pub mod seama;
 pub mod rtk;
+
+pub mod mbr;
+pub mod fat;

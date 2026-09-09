@@ -23,3 +23,6 @@ pub mod trx;
 pub mod seama;
 pub mod rtk;
 pub mod zlib;
+
+pub mod mbr;
+pub mod fat;

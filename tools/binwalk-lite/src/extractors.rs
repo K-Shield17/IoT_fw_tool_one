@@ -18,3 +18,5 @@ pub mod yaffs2;
 pub mod trx;
 pub mod zlib;
 pub mod tsk;
+
+pub mod mbr;

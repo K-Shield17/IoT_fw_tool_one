@@ -177,6 +177,28 @@ pub fn patterns() -> Vec<signatures::common::Signature> {
                     description: signatures::cramfs::DESCRIPTION.to_string(),
                     extractor: Some(extractors::sevenzip::sevenzip_extractor()),
                 },
+        // MBR
+        signatures::common::Signature {
+            name: "mbr".to_string(),
+            short: true,
+            magic_offset: signatures::mbr::MAGIC_OFFSET,
+            always_display: true,
+            magic: signatures::mbr::mbr_magic(),
+            parser: signatures::mbr::mbr_parser,
+            description: signatures::mbr::DESCRIPTION.to_string(),
+            extractor: Some(extractors::mbr::mbr_extractor()),
+        },
+        // FAT
+        signatures::common::Signature {
+            name: "fat".to_string(),
+            short: true,
+            magic_offset: signatures::fat::MAGIC_OFFSET,
+            always_display: false,
+            magic: signatures::fat::fat_magic(),
+            parser: signatures::fat::fat_parser,
+            description: signatures::fat::DESCRIPTION.to_string(),
+            extractor: Some(extractors::tsk::tsk_extractor()),
+        },
         signatures::common::Signature {
                     name: "ext".to_string(),
                     short: false,
