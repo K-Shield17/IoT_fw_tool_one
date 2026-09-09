@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/slimm609/checksec/v3/pkg/output"
 	uroot "github.com/u-root/u-root/pkg/ldd"
 )
 
@@ -210,7 +209,7 @@ func getLdd(filename string, file *elf.File) string {
 
 	files, _ := uroot.FList(abs)
 	if dynamic && len(files) == 0 {
-		output.Warnf("Warning: %s: Dynamic Binary found but missing libc. Fortify results will be skipped", abs)
+		fmt.Fprintf(os.Stderr, "Warning: %s: Dynamic Binary found but missing libc. Fortify results will be skipped\n", abs)
 		return "unk"
 	}
 

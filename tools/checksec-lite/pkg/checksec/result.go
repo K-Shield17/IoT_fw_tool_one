@@ -1,7 +1,7 @@
 package checksec
 
 // Status is the severity of a check result. The string values are the colour
-// names already understood by output.ColorPrinter, so a Status can be passed
+// Status represents the severity/state associated with a check result
 // straight through to the renderer.
 type Status string
 

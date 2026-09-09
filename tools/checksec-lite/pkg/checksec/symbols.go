@@ -6,8 +6,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-
-	"github.com/slimm609/checksec/v3/pkg/output"
 )
 
 // SYMBOLS detects usage of elf symbols
@@ -27,7 +25,7 @@ func DynValueFromPTDynamic(file *elf.File, tag elf.DynTag) ([]uint64, error) {
 			data := make([]byte, prog.Filesz)
 			_, err := prog.ReadAt(data, 0)
 			if err != nil {
-				output.Warnf("Error reading dynamic section: %v", err)
+				fmt.Fprintf(os.Stderr, "Error reading dynamic section: %v\n", err)
 				return res, err
 			}
 
@@ -74,7 +72,7 @@ func FunctionsFromSymbolTable(file *os.File) ([]elf.Symbol, error) {
 
 	f, err := elf.NewFile(file)
 	if err != nil {
-		output.Warnf("Error parsing ELF file %s: %v", file.Name(), err)
+		fmt.Fprintf(os.Stderr, "Error parsing ELF file %s: %v\n", file.Name(), err)
 		return functions, err
 	}
 
@@ -138,7 +136,7 @@ func FunctionsFromSymbolTable(file *os.File) ([]elf.Symbol, error) {
 	symData := make([]byte, symTableSize)
 	_, err = file.ReadAt(symData, int64(symTabOffset[0]))
 	if err != nil {
-		output.Warnf("Error reading symbol table for %s: %v", file.Name(), err)
+		fmt.Fprintf(os.Stderr, "Error reading symbol table for %s: %v\n", file.Name(), err)
 		return functions, err
 	}
 
@@ -146,7 +144,7 @@ func FunctionsFromSymbolTable(file *os.File) ([]elf.Symbol, error) {
 	strData := make([]byte, strTabSize[0])
 	_, err = file.ReadAt(strData, int64(strTabOffset[0]))
 	if err != nil {
-		output.Warnf("Error reading string table for %s: %v", file.Name(), err)
+		fmt.Fprintf(os.Stderr, "Error reading string table for %s: %v\n", file.Name(), err)
 		return functions, err
 	}
 
@@ -172,7 +170,7 @@ func FunctionsFromSymbolTable(file *os.File) ([]elf.Symbol, error) {
 			sym := elf.Sym64{}
 			err := binary.Read(bytes.NewReader(symData[i:i+symSize]), bo, &sym)
 			if err != nil {
-				output.Warnf("Error reading symbol in %s: %v", file.Name(), err)
+				fmt.Fprintf(os.Stderr, "Error reading symbol in %s: %v\n", file.Name(), err)
 				continue
 			}
 
@@ -196,7 +194,7 @@ func FunctionsFromSymbolTable(file *os.File) ([]elf.Symbol, error) {
 			sym := elf.Sym32{}
 			err := binary.Read(bytes.NewReader(symData[i:i+symSize]), bo, &sym)
 			if err != nil {
-				output.Warnf("Error reading symbol in %s: %v", file.Name(), err)
+				fmt.Fprintf(os.Stderr, "Error reading symbol in %s: %v\n", file.Name(), err)
 				continue
 			}
 
