@@ -286,11 +286,11 @@ cat <<'HTML'
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>IoT Firmware Security Assessment</title>
+<title>IoT 펌웨어 보안 점검 보고서</title>
 <style>
-:root{--bg:#f5f7fa;--card:#fff;--text:#1f2937;--muted:#667085;--line:#d9dee7;--head:#eef2f6;--critical:#8f1224;--high:#b42318;--med:#b54708;--low:#175cd3}
+:root{--bg:#f5f7fa;--card:#fff;--text:#1f2937;--muted:#667085;--line:#d9dee7;--head:#eef2f6;--critical:#7a0a0a;--high:#c73d3d; --med:#d4a017; --low:#2f5d8a}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,'Noto Sans KR','Malgun Gothic',sans-serif;line-height:1.55}
+body{margin:0;background:var(--bg);color:var(--text);font-family:'Malgun Gothic','Noto Sans KR',Arial,sans-serif;line-height:1.55}
 .wrap{max-width:1120px;margin:28px auto;padding:0 14px}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:14px}
 h1{font-size:27px;margin:0 0 8px}
@@ -311,35 +311,45 @@ code{background:#f2f4f7;padding:1px 5px;border-radius:4px;font-family:Consolas,m
 .finding{border:1px solid var(--line);border-left:5px solid #98a2b3;border-radius:7px;padding:15px 16px 4px;margin:15px 0 22px}
 .finding.high{border-left-color:var(--high)}
 .finding.medium{border-left-color:var(--med)}
-.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700}
 .found{background:#fee4e2;color:#912018}
 .potential{background:#fef0c7;color:#93370d}
 .partial{background:#e0f2fe;color:#075985}
 .limited{background:#eaecf0;color:#344054}
+.callout{background:#f8faff;border-left:4px solid #274690;padding:13px 15px;margin:14px 0 18px}
 ul{padding-left:20px}
 .footer{margin-top:35px;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:12px}
 @media(max-width:900px){.summary-grid{grid-template-columns:repeat(3,1fr)}}
 @media print{body{background:#fff}.wrap{max-width:none;margin:0}.card{border:none;padding:0}.summary-grid{grid-template-columns:repeat(6,1fr)}table,.finding{break-inside:avoid}}
 </style>
 </head>
-<body><div class="wrap">
+<body>
+<div class="wrap">
 HTML
 
-jq -r '
-  def e: tostring|@html;
-  def td($x): "<td>"+($x|e)+"</td>";
-  def code($x): "<code>"+($x|e)+"</code>";
-  def metric($label;$v;$cls):
-    "<div class=\"metric\"><div class=\"label\">"+$label+"</div><div class=\"value "+$cls+"\">"+($v|tostring)+"</div></div>";
-  def badge($s):
-    (if $s=="Evidence Found" then "found"
-     elif $s=="Potential Evidence" then "potential"
-     elif $s=="Partial Evidence" then "partial"
-     else "limited" end) as $c |
-    "<span class=\"badge "+$c+"\">"+($s|e)+"</span>";
+# 한국어 헤더 + jq 본문까지 하나의 카드 안에 담음
+jq -r \
+  --arg inspection_date "$(date '+%Y-%m-%d')" '
+def e: tostring|@html;
+def td($x): "<td>"+($x|e)+"</td>";
+def code($x): "<code>"+($x|e)+"</code>";
+def metric($label;$v;$cls):
+  "<div class=\"metric\"><div class=\"label\">"+$label+"</div><div class=\"value "+$cls+"\">"+($v|tostring)+"</div></div>";
+def badge($s):
+  (if $s=="Evidence Found" then "found"
+   elif $s=="Potential Evidence" then "potential"
+   elif $s=="Partial Evidence" then "partial"
+   else "limited" end) as $c |
+  "<span class=\"badge "+$c+"\">"+($s|e)+"</span>";
 
-  "<div class=\"card\"><h1>IoT Firmware Security Assessment</h1>"+
-  "<div class=\"muted\">Static firmware analysis · IoT_fw_tool · Preventive Security Checkup</div>"+
+"<div class=\"card\">"+
+"<span class=\"badge\">IoT_fw_tool 자동 생성 보고서</span>"+
+"<h1>IoT 펌웨어 보안 점검 보고서</h1>"+
+"<p class=\"muted\">IoT_fw_tool · Firmware Security Checkup · 점검 일자: \($inspection_date|e)</p>"+
+"<div class=\"callout\"><b>보고서 목적</b><br>펌웨어 정적 점검 결과를 점검 기준·Attack Vector·취약점 상세·조치방안·침해사고 대응 관점으로 구조화한 보고서입니다.</div>"+
+
+"<h2>0. 보고서 개요</h2>"+
+  "<p>Overall Risk: <span class=\"risk "+(.summary.overall_risk|e)+"\">"+(.summary.overall_risk|e)+"</span></p>"+
   "<table style=\"margin-top:18px\"><tr><th style=\"width:22%\">구분</th><th>내용</th></tr>"+
   "<tr>"+td("대상")+td(.target)+"</tr>"+
   "<tr>"+td("점검 방식")+td("펌웨어 파일 기반 정적 보안 점검")+"</tr>"+
