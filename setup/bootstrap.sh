@@ -93,7 +93,8 @@ if [[ "$MODE" == "scan" ]]; then
   install_py_tool jefferson jefferson
   install_py_tool ubireader_extract_files ubi-reader
   install_py_tool ubireader_extract_images ubi-reader
-  install_py_tool vmlinux-to-elf vmlinux-to-elf
+  #innstall_py_tool vmlinux-to-elf vmlinux-to-elf
+ 
 
   # Expose virtualenv utilities without modifying the user's global environment.
   for exe in jefferson ubireader_extract_files ubireader_extract_images vmlinux-to-elf; do
