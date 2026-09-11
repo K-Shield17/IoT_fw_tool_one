@@ -9,14 +9,17 @@ import (
 )
 
 type output struct {
-	File    string            `json:"file"`
-	RELRO   *checksec.Result  `json:"relro"`
-	Canary  *checksec.Result  `json:"canary"`
-	NX      *checksec.Result  `json:"nx"`
-	PIE     *checksec.Result  `json:"pie"`
-	RPATH   *checksec.Result  `json:"rpath"`
-	RUNPATH *checksec.Result  `json:"runpath"`
-	Fortify map[string]string `json:"fortify"`
+	File         string            `json:"file"`
+	RELRO        *checksec.Result  `json:"relro"`
+	Canary       *checksec.Result  `json:"canary"`
+	NX           *checksec.Result  `json:"nx"`
+	PIE          *checksec.Result  `json:"pie"`
+	RPATH        *checksec.Result  `json:"rpath"`
+	RUNPATH      *checksec.Result  `json:"runpath"`
+	Fortify      map[string]string `json:"fortify"`
+	SeparateCode *checksec.Result  `json:"separate_code"`
+	CFI          *checksec.Result  `json:"cfi"`
+	StackClash   *checksec.Result  `json:"stack_clash"`
 }
 
 func main() {
@@ -43,7 +46,19 @@ func main() {
 		f["fortifiable"] = fr.Fortifiable
 		f["libc_support"] = fr.LibcSupport
 	}
-	r := output{File: name, RELRO: checksec.RELRO(ef), Canary: checksec.Canary(ef, raw), NX: checksec.NX(ef), PIE: checksec.PIE(ef), RPATH: checksec.RPATH(ef), RUNPATH: checksec.RUNPATH(ef), Fortify: f}
+	r := output{
+		File:         name,
+		RELRO:        checksec.RELRO(ef),
+		Canary:       checksec.Canary(ef, raw),
+		NX:           checksec.NX(ef),
+		PIE:          checksec.PIE(ef),
+		RPATH:        checksec.RPATH(ef),
+		RUNPATH:      checksec.RUNPATH(ef),
+		Fortify:      f,
+		SeparateCode: checksec.SeparateCode(ef),
+		CFI:          checksec.CFI(ef),
+		StackClash:   checksec.StackClash(ef),
+	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetEscapeHTML(false)
 	if err := enc.Encode(r); err != nil {
