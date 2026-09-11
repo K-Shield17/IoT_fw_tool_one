@@ -62,7 +62,7 @@ ROOTFS=""
 if [[ "$MODE" == "scan" ]]; then
   mkdir -p "$OUT/extracted"
   echo '[1/7] Binwalk scan + temporary extraction'
-  if ! "$BW" "$INPUT" "$OUT/extracted" > "$OUT/raw/binwalk.jsonl" 2> >(tee "$OUT/raw/binwalk.stderr" >&2); then
+  if ! "$BW" "$INPUT" "$OUT/extracted" > "$OUT/raw/binwalk.jsonl" 2> "$OUT/raw/binwalk.stderr"; then
     echo '[!] Binwalk returned a non-zero status. Trying to continue with any extracted filesystem.' >&2
   fi
   ROOTFS="$($ROOT/setup/find_rootfs.sh "$OUT/extracted" 2>/dev/null || true)"
