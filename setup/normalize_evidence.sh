@@ -17,6 +17,10 @@ while IFS=$'\t' read -r category severity path evidence; do
     config) property="configuration_file" ;;
     database) property="database_file" ;;
     network) property="network_indicator" ;;
+    web_interface) property="web_interface_indicator" ;;
+    update) property="update_indicator" ;;
+    component) property="component_indicator" ;;
+    encoding) property="encoding_indicator" ;;
   esac
   jq -cn \
     --arg source "firmwalker" \
@@ -49,7 +53,13 @@ while IFS= read -r line; do
         rpath_status:(.rpath.status // "unknown"),
         runpath:(.runpath.value // "Unknown"),
         runpath_status:(.runpath.status // "unknown"),
-        fortify:(.fortify.output // "Unknown")
+        fortify:(.fortify.output // "Unknown"),
+        separate_code:(.separate_code.value // "Unknown"),
+        separate_code_status:(.separate_code.status // "unknown"),
+        cfi:(.cfi.value // "Unknown"),
+        cfi_status:(.cfi.status // "unknown"),
+        stack_clash:(.stack_clash.value // "Unknown"),
+        stack_clash_status:(.stack_clash.status // "unknown")
       }
     }' <<<"$line" >> "$OUT"
 done < "$CS_JSONL"
