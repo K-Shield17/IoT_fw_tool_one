@@ -12,12 +12,10 @@ IoT 펌웨어를 정적 분석하여 주요 보안 위험 요소를 점검하고
 초기 구축 방법
 
 ```bash
-git clone https://github.com/K-Shield17/IoT_fw_tool_one.git
-```
-```bash
-cd IoT_fw_tool_one
-```
-```bash
+git clone https://github.com/K-Shield17/IoT_fw_tool_one.git \
+
+cd IoT_fw_tool_one \
+
 chmod +x run.sh build.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
 ```
 실행 방법
