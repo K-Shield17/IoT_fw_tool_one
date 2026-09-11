@@ -19,7 +19,6 @@ cd IoT_fw_tool_one \
 chmod +x run.sh build.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
 ```
 실행 방법
-<output_directory> 미지정시 results 디렉토리가 자동 생성됩니다. 
 ```bash
 ./run.sh scan <firmware_file> -o <output_directory>
 ```
