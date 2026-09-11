@@ -39,38 +39,114 @@ jq -n \
   }' > "$OUTDIR/report.json"
 
 # Analyst-oriented HTML. Priority cases are visible first; raw evidence is collapsed.
+# => 한국어 보고서 스타일로 교체 + 점검 일자는 시스템 시간 자동 사용
 {
 cat <<'HTML'
-<!doctype html><html><head><meta charset="utf-8"><title>IoT Firmware Security Assessment</title>
-<style>
-:root{--bg:#f6f8fb;--card:#fff;--text:#182230;--muted:#5f6b7a;--border:#dfe5ec;--critical:#8f1224;--high:#b42318;--medium:#b54708;--low:#175cd3;--info:#475467}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.55 Arial,sans-serif}.wrap{max-width:1180px;margin:28px auto;padding:0 22px 60px}.header,.card{background:var(--card);border:1px solid var(--border);border-radius:12px}.header{padding:26px 30px}.header h1{margin:0 0 8px;font-size:28px}.muted{color:var(--muted)}.risk{font-weight:800;font-size:20px}.CRITICAL{color:var(--critical)}.HIGH{color:var(--high)}.MEDIUM{color:var(--medium)}.LOW{color:var(--low)}.INFO{color:var(--info)}
-.metrics{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:16px 0}.metric{background:#fff;border:1px solid var(--border);border-radius:10px;padding:13px}.metric b{font-size:20px;display:block}.section-title{margin:30px 0 12px;font-size:20px}.case{margin:12px 0;padding:22px 24px}.case-head{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}.case h2{font-size:19px;margin:0 0 4px}.badges span{display:inline-block;border:1px solid var(--border);border-radius:99px;padding:3px 9px;margin-left:6px;font-size:12px;font-weight:700}.asset{font-family:monospace;background:#f2f4f7;padding:6px 8px;border-radius:6px;display:inline-block;margin:7px 0}.cols{display:grid;grid-template-columns:1fr 1fr;gap:18px}.box{background:#fafbfc;border:1px solid var(--border);border-radius:8px;padding:13px 15px}.box h3{margin:0 0 7px;font-size:14px}.evidence li,.remediation li,.impact li{margin:4px 0}table{border-collapse:collapse;width:100%;background:#fff}th,td{border-bottom:1px solid var(--border);padding:9px;text-align:left;vertical-align:top}th{background:#f8fafc}details{background:#fff;border:1px solid var(--border);border-radius:9px;padding:12px 15px;margin:9px 0}summary{cursor:pointer;font-weight:700}code{white-space:pre-wrap;word-break:break-word}.priority{font-weight:800;margin-right:8px}@media(max-width:800px){.metrics{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}.case-head{display:block}.badges span{margin:4px 5px 0 0}}
-</style></head><body><div class="wrap">
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>IoT 펌웨어 보안 점검 보고서</title><style>
+body{font-family:'Malgun Gothic','Noto Sans KR',Arial,sans-serif;color:#172033;margin:0;background:#f4f6f8}
+.page{max-width:980px;margin:24px auto;background:#fff;padding:44px 54px;box-shadow:0 2px 14px #0001}
+h1{font-size:28px;margin:0 0 10px} h2{font-size:20px;margin-top:34px;border-bottom:2px solid #dbe3f6;padding-bottom:8px}
+h3{font-size:15px;margin-top:24px}.muted{color:#667085}.badge{display:inline-block;padding:4px 9px;border-radius:999px;background:#eef2ff;color:#3730a3;font-weight:700}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:13px}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;vertical-align:top}th{background:#f3f5f9}
+.callout{background:#f8faff;border-left:4px solid #274690;padding:13px 15px;margin:14px 0}.warn{background:#fff8eb;border-left-color:#f79009}
+.high{color:#b42318;font-weight:700}.medium{color:#b54708;font-weight:700}.low{color:#175cd3;font-weight:700}
+code{font-family:Consolas,monospace}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.card{border:1px solid #e5e7eb;border-radius:10px;padding:13px}
+.small{font-size:12px}.footer{margin-top:35px;border-top:1px solid #e5e7eb;padding-top:10px;color:#667085;font-size:11px}
+</style></head><body>
+<div class="page">
+<span class="badge">IoT_fw_tool 자동 생성 보고서</span>
+<h1>IoT 펌웨어 보안 점검 보고서</h1>
+<p class="muted">IoT_fw_tool · Firmware Security Checkup</p>
+<div class="callout"><b>보고서 목적</b><br>펌웨어 정적 점검 결과를 점검 기준·Attack Vector·취약점 상세·조치방안·침해사고 대응 관점으로 구조화한 보고서입니다.</div>
 HTML
-jq -r '
-"<div class=\"header\"><h1>IoT Firmware Security Assessment</h1><div class=\"muted\">Static firmware analysis · RootFS: <code>\(.rootfs|@html)</code></div><p>Overall Risk: <span class=\"risk \(.summary.overall_risk)\">\(.summary.overall_risk)</span></p><p class=\"muted\">Security cases are created by correlating multiple static-analysis observations. Raw tool output is retained as evidence and is not automatically treated as a confirmed vulnerability.</p></div>"+
-"<div class=\"metrics\">"+
-"<div class=\"metric\"><span>Critical</span><b class=\"CRITICAL\">\(.summary.critical_cases)</b></div>"+
-"<div class=\"metric\"><span>High</span><b class=\"HIGH\">\(.summary.high_cases)</b></div>"+
-"<div class=\"metric\"><span>Medium</span><b class=\"MEDIUM\">\(.summary.medium_cases)</b></div>"+
-"<div class=\"metric\"><span>Security cases</span><b>\(.summary.security_cases)</b></div>"+
-"<div class=\"metric\"><span>Assets</span><b>\(.summary.analyzed_assets)</b></div>"+
-"<div class=\"metric\"><span>Raw evidence</span><b>\(.summary.raw_evidence)</b></div></div>"+
-"<h2 class=\"section-title\">Priority Security Cases</h2>"+
-(if (.security_cases|length)==0 then "<div class=\"card case\">No correlated priority cases were generated from the current evidence.</div>" else
-([.security_cases|to_entries[]| .key as $i | .value |
-"<section class=\"card case\"><div class=\"case-head\"><div><h2><span class=\"priority\">P\($i+1)</span>\(.title|@html)</h2><div class=\"asset\">\(.asset|@html)</div></div><div class=\"badges\"><span class=\"\(.severity)\">Risk: \(.severity)</span><span>Confidence: \(.confidence)</span></div></div>"+
-"<div class=\"cols\"><div class=\"box\"><h3>Why this matters</h3><div>\(.analysis|@html)</div></div><div class=\"box\"><h3>Attack scenario</h3><div>\(.attack_scenario|@html)</div></div></div>"+
-"<div class=\"cols\" style=\"margin-top:12px\"><div class=\"box\"><h3>Potential impact</h3><ul class=\"impact\">"+([.potential_impact[]|"<li>\(.|@html)</li>"]|join(""))+"</ul></div>"+
-"<div class=\"box\"><h3>Recommended remediation</h3><ol class=\"remediation\">"+([.remediation[]|"<li>\(.|@html)</li>"]|join(""))+"</ol></div></div>"+
-"<details><summary>Evidence chain</summary><ul class=\"evidence\">"+([.evidence[]|"<li>\(.|@html)</li>"]|join(""))+"</ul></details></section>"
-]|join("")) end)+
-"<h2 class=\"section-title\">Systemic Findings</h2>"+
-(if (.systemic_findings|length)==0 then "<div class=\"card case muted\">No systemic finding met the reporting threshold.</div>" else ([.systemic_findings[]|"<section class=\"card case\"><div class=\"case-head\"><h2>\(.title|@html)</h2><div class=\"badges\"><span class=\"\(.severity)\">Risk: \(.severity)</span><span>Confidence: \(.confidence)</span></div></div><p>\(.analysis|@html)</p><h3>Recommended remediation</h3><ul>"+([.remediation[]|"<li>\(.|@html)</li>"]|join(""))+"</ul></section>"]|join("")) end)+
-"<h2 class=\"section-title\">Informational</h2>"+([.informational[]|"<section class=\"card case\"><h2>\(.title|@html)</h2><p>\(.analysis|@html)</p></section>"]|join(""))+
-"<h2 class=\"section-title\">Evidence Appendix</h2>"+
-"<details><summary>Show raw evidence (\(.summary.raw_evidence))</summary><table><tr><th>Source</th><th>Type</th><th>Asset</th><th>Observation</th></tr>"+
-([.raw_evidence[]|"<tr><td>\(.source|@html)</td><td>\(.type|@html)</td><td><code>\(.asset|tostring|@html)</code></td><td><code>\(.value|tojson|@html)</code></td></tr>"]|join(""))+"</table></details>"' "$OUTDIR/report.json"
-echo '</div></body></html>'
+
+jq -r \
+  --arg inspection_date "$(date '+%Y-%m-%d')" '
+def esc: @html;
+
+def risk_class:
+  if . == "CRITICAL" then "high"
+  elif . == "HIGH" then "high"
+  elif . == "MEDIUM" then "medium"
+  elif . == "LOW" then "low"
+  else "low" end;
+
+"<h2>1. 점검 개요</h2>
+<table>
+<tr><th>점검 대상</th><td>\(.rootfs|esc)</td><th>점검 일자</th><td>\($inspection_date|esc)</td></tr>
+<tr><th>점검 도구</th><td colspan=\"3\">IoT_fw_tool (binwalk / firmwalker / checksec 기반 wrapper)</td></tr>
+<tr><th>수행 환경</th><td colspan=\"3\">Linux 분석 환경 · 입력: firmware.bin · 출력: HTML/PDF/CSV</td></tr>
+</table>
+
+<h2>2. 진단 결과 요약</h2>
+<div class=\"grid\">
+  <div class=\"card\"><b>Critical</b><br><span class=\"high\">\(.summary.critical_cases)건</span></div>
+  <div class=\"card\"><b>High</b><br><span class=\"high\">\(.summary.high_cases)건</span></div>
+  <div class=\"card\"><b>Medium</b><br><span class=\"medium\">\(.summary.medium_cases)건</span></div>
+  <div class=\"card\"><b>Security cases</b><br>\(.summary.security_cases)건</div>
+  <div class=\"card\"><b>Analyzed assets</b><br>\(.summary.analyzed_assets)건</div>
+  <div class=\"card\"><b>Raw evidence</b><br>\(.summary.raw_evidence)건</div>
+</div>
+
+<h2>3. 우선순위 보안 케이스</h2>
+" +
+(if (.security_cases|length)==0 then
+  "<div class=\"callout\">상관관계가 성립된 우선순위 보안 케이스가 없습니다.</div>"
+else
+  ([.security_cases|to_entries[] | .key as $i | .value |
+    "<h3>P\($i+1) · \(.title|esc) <span class=\"\(.severity|risk_class)\">[\(.severity)]</span></h3>
+<table>
+<tr><th>자산</th><td><code>\(.asset|esc)</code></td><th>심각도</th><td>\(.severity|esc)</td></tr>
+<tr><th>신뢰도</th><td>\(.confidence|esc)</td><th>분석</th><td>\(.analysis|esc)</td></tr>
+<tr><th>공격 시나리오</th><td colspan=\"3\">\(.attack_scenario|esc)</td></tr>
+<tr><th>잠재적 영향</th><td colspan=\"3\"><ul>\([.potential_impact[]|"<li>\(.|esc)</li>"]|join(""))</ul></td></tr>
+<tr><th>권장 조치</th><td colspan=\"3\"><ol>\([.remediation[]|"<li>\(.|esc)</li>"]|join(""))</ol></td></tr>
+<tr><th>증거 체인</th><td colspan=\"3\"><ul>\([.evidence[]|"<li>\(.|esc)</li>"]|join(""))</ul></td></tr>
+</table>"
+  ]|join(""))
+end) +
+"
+<h2>4. Systemic Findings</h2>
+" +
+(if (.systemic_findings|length)==0 then
+  "<div class=\"callout\">보고 기준을 만족하는 Systemic Finding 이 없습니다.</div>"
+else
+  ([.systemic_findings[]|
+    "<h3>\(.title|esc) <span class=\"\(.severity|risk_class)\">[\(.severity)]</span></h3>
+<table>
+<tr><th>심각도</th><td>\(.severity|esc)</td><th>신뢰도</th><td>\(.confidence|esc)</td></tr>
+<tr><th>분석</th><td colspan=\"3\">\(.analysis|esc)</td></tr>
+<tr><th>권장 조치</th><td colspan=\"3\"><ul>\([.remediation[]|"<li>\(.|esc)</li>"]|join(""))</ul></td></tr>
+</table>"
+  ]|join(""))
+end) +
+"
+<h2>5. Informational</h2>
+" +
+(if (.informational|length)==0 then
+  "<div class=\"callout\">정보성 항목이 없습니다.</div>"
+else
+  ([.informational[]|
+    "<h3>\(.title|esc)</h3>
+<table><tr><th>분석</th><td>\(.analysis|esc)</td></tr></table>"
+  ]|join(""))
+end) +
+"
+<h2>6. Evidence Appendix</h2>
+<details><summary>Raw evidence (\(.summary.raw_evidence)) 보기</summary>
+<table>
+<tr><th>Source</th><th>Type</th><th>Asset</th><th>Observation</th></tr>
+" +
+([.raw_evidence[]|
+  "<tr><td>\(.source|esc)</td><td>\(.type|esc)</td><td><code>\(.asset|tostring|esc)</code></td><td><code>\(.value|tojson|esc)</code></td></tr>"
+]|join("")) +
+"
+</table>
+</details>
+
+<div class=\"footer\">본 문서는 IoT_fw_tool 이 생성한 자동 보고서입니다. 자동 탐지 결과는 수동 검증이 필요합니다.</div>
+</div>
+</body></html>"
+' "$OUTDIR/report.json"
+
 } > "$OUTDIR/report.html"
