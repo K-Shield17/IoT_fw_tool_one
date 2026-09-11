@@ -1,107 +1,45 @@
-# IoT_fw_tool — slim integrated build
+# IoT Firmware Security Assessment Tool
 
-IoT firmware static-analysis pipeline built by **selecting only the required functionality from the three supplied upstream tools**, rather than vendoring each complete project.
+IoT 펌웨어를 정적 분석하여 주요 보안 위험 요소를 점검하고, HTML / JSON / CSV 형태의 결과를 생성하는 CLI 도구입니다.
 
-## Pipeline
+## 1. 사용 목적
 
-`Firmware -> Binwalk-lite temporary extraction -> RootFS -> targeted Firmwalker-lite + selected ELF Checksec-lite -> normalized findings -> risk correlation -> JSON/HTML report -> delete extracted/raw working data`
+본 도구는 IoT 펌웨어를 빠르게 점검해야 하는 보안 담당자와 분석자를 대상으로 제작되었습니다.
 
-## Selected upstream functionality
+복잡한 분석 환경 없이도 주요 보안 위험 요소를 정적 분석으로 확인하고, 결과를 보고서 형태로 정리하여 추가 점검 및 보안 조치에 활용할 수 있도록 하는 것을 목적으로 합니다.
 
-### Binwalk 3.1.0 (Rust)
-Kept only the signature/extraction path needed for common embedded Linux firmware: gzip/xz/tar/squashfs/lzma/bzip2/uImage/cpio/Linux kernel/zstd/zip/JFFS2/ROMFS/UBI/YAFFS/CRAMFS/ext/FAT/MBR/TP-Link/TRX/SEAMA/Realtek/zlib. The original parser/extractor/structure source files for these formats are copied unchanged. Removed entropy graphing, stdin, carve-only mode, generic listing/display CLI, unrelated signatures and extractors. The small `main.rs` only performs scan + extraction + recursive extraction.
-
-### Firmwalker (Bash)
-The scanner is now intentionally **targeted rather than exhaustive**. It searches high-value configuration, credential, key/certificate, web/API, service-startup, firmware-update and state/data paths such as `/etc`, `/var`, `/root`, `/home`, `/www`, `/htdocs`, `/cgi-bin`, plus executable paths such as `/bin`, `/sbin`, `/usr/bin` and `/usr/sbin`. It collects evidence useful for OWASP IoT Top 10 mapping while still retaining additional preventive indicators such as component/version hints, URLs/IPs, crypto use and binary/service presence. Large library trees and unrelated extracted files are not repeatedly scanned.
-
-### Checksec 3.2.0 (Go)
-Static ELF analysis keeps RELRO, Canary, NX, PIE, RPATH, RUNPATH and FORTIFY and adds **Separate Code**, **CFI** and **Stack Clash Protection** indicators. Checksec is no longer run against every file in the root filesystem; it is limited to executable-heavy and externally exposed paths (`/bin`, `/sbin`, `/usr/bin`, `/usr/sbin`, `/usr/local/bin`, `/usr/local/sbin`, and CGI directories). CFI is a conservative marker-based observation. Stack Clash protection has no universal ELF metadata bit, so the scanner reports a positive result only when an explicit probe marker is visible and otherwise returns `Unknown` rather than claiming the protection is absent.
-
-## Build
-
-Requirements: Rust/Cargo, Go 1.25+, `jq`, `file`, plus system utilities required by the retained Binwalk extractors (for example `unsquashfs`, `7z`, `tsk_recover` (Sleuth Kit), `ubireader_extract_files`, depending on firmware format).
+## 2. 사용 방법
 
 ```bash
-chmod +x build.sh run.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
-./build.sh
+git clone https://github.com/K-Shield17/IoT_fw_tool_one.git
+cd IoT_fw_tool_one
+
+chmod +x run.sh build.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
+
+./run.sh scan <firmware_file> -o <output_directory>
 ```
 
-### MBR/FAT recursive extraction
-
-The retained Binwalk path now includes the upstream MBR and FAT signature/parser chain. MBR partitions are carved with the upstream internal MBR extractor, then recursively rescanned. FAT/ext filesystems are recovered with the retained `tsk_recover` extractor. This restores the extraction path needed for disk-style firmware images such as `MBR -> FAT32 partition -> boot files` while preserving the existing SquashFS extraction path.
-
-## Run
+예시:
 
 ```bash
-./run.sh scan firmware.bin -o results
+./run.sh scan ./IoTGoat.img -o results
 ```
 
-For an already extracted filesystem:
+별도의 수동 Build는 필수가 아니며, 필요한 경우 실행 과정에서 자동으로 Build됩니다.
 
-```bash
-./run.sh analyze-rootfs ./rootfs -o results
-```
+## 3. 분석 결과
 
-`-o` is the **parent output directory**. Each input gets its own result directory, so later analyses do not overwrite earlier ones.
-
-Example: analyzing `firmware.bin` with `-o results` creates `results/firmware/`. If that name already exists, the next run is saved as `results/firmware_2/`, then `results/firmware_3/`, and so on.
-
-Final outputs are stored under the per-input directory: `results/firmware/report.json` and `results/firmware/report.html`. Binwalk extraction directories and raw/intermediate analyzer files are temporary working data and are removed automatically when the run exits.
-
-## Automatic dependency setup
-
-`run.sh` now performs a preflight before analysis. On Ubuntu/AttifyOS it:
-
-- checks required OS tools and installs missing `apt` packages;
-- installs Rust + Cargo with `rustup` only when they are absent;
-- installs Go when absent and enables Go toolchain auto-selection;
-- creates a project-local Python virtual environment **only for upstream Binwalk extractor utilities** (`jefferson`, `ubi-reader`, `vmlinux-to-elf`); the IoT_fw_tool analysis/report code itself is not Python;
-- provides a project-local `sasquatch` compatibility command backed by modern `unsquashfs`, avoiding the common legacy-sasquatch GCC build failure for standard SquashFS images;
-- resolves firmware paths to absolute paths before Binwalk starts;
-- automatically builds Binwalk-lite/Checksec-lite when binaries are missing.
-
-Normal use on a fresh Ubuntu/AttifyOS machine is therefore simply:
-
-```bash
-chmod +x build.sh run.sh setup/*.sh tools/firmwalker-lite/firmwalker-lite.sh
-./run.sh scan /absolute/or/relative/path/to/firmware.bin -o results
-```
-
-The first run may ask for the `sudo` password while installing missing Ubuntu packages. Later runs reuse everything already installed.
-
-To inspect the current environment without starting an analysis:
-
-```bash
-./setup/check_environment.sh
-```
-
-### SquashFS note
-
-Binwalk 3.1.0's upstream SquashFS extractor invokes `sasquatch`. The legacy sasquatch source frequently fails to compile with modern GCC. This package therefore installs a local compatibility wrapper that invokes the distribution's maintained `unsquashfs` for standard SquashFS. Vendor-modified SquashFS images that genuinely require patched sasquatch may still require a dedicated extractor; this is reported as an extraction limitation rather than a missing-command crash.
-
-## Analyst-oriented report engine
-
-The current report engine separates raw tool observations from security conclusions:
+분석 성공 시 다음 파일이 생성됩니다.
 
 ```text
-Binwalk / Firmwalker / Checksec
-        ↓
-Raw evidence
-        ↓
-Asset context
-        ↓
-Evidence correlation
-        ↓
-Security cases
-        ↓
-Analyst-oriented HTML/JSON report
+results/<target_name>/
+├── report.html
+├── report.json
+└── report.csv
 ```
 
-A missing Canary, disabled PIE, or Partial RELRO is no longer reported as a standalone confirmed vulnerability. The report prioritizes correlated cases such as network-service exposure plus multiple hardening weaknesses, weak password hashes, or broadly readable key material. Kernel modules and ordinary shared-library hardening observations remain available in the evidence appendix without flooding the main findings.
+주요 결과는 `report.html`에서 확인할 수 있습니다.
 
-During analysis, intermediate evidence is generated under `results/<target>/raw/` and Binwalk extraction data under `results/<target>/extracted/`. These are working artifacts only and are deleted automatically after report generation (and also on early exit).
-
-The persistent final outputs are:
-
-- `results/<target>/report.json`
-- `results/<target>/report.html`
+```markdown
+![Report Example](./docs/report_example.png)
+```
