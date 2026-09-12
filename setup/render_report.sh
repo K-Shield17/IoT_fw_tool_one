@@ -19,6 +19,57 @@ def sev: if .=="CRITICAL" then 4 elif .=="HIGH" then 3 elif .=="MEDIUM" then 2 e
 def assets_for($t): [$ev[]? | select((.type//"")==$t) | (.asset//empty)] | map(select(.!="")) | unique;
 def has_type($t): (assets_for($t)|length)>0;
 
+def kt($r;$t):
+  if $r=="F-01" then "네트워크 서비스 ELF 보호기법 미흡"
+  elif $r=="F-02" then "민감 Key 파일의 과도한 읽기 권한"
+  elif $r=="F-03" then "취약한 Unix-MD5 비밀번호 해시 사용"
+  elif $r=="F-04" then "Telnet 원격 서비스 활성화 정황"
+  elif $r=="F-05" then "Web 명령 실행 위험 정황"
+  elif $r=="F-06" then "펌웨어 전반의 ELF Hardening 미흡"
+  elif $r=="F-07" then "안전하지 않은 Firmware Update 가능성"
+  elif $r=="F-08" then "취약한 구성요소 사용 가능성"
+  else $t end;
+
+def kr($r;$x):
+  if $r=="F-01" then "네트워크 서비스로 분류된 ELF에서 복수의 주요 보호기법이 적용되지 않았거나 불완전한 상태로 확인됨. 이는 취약 코드의 존재를 직접 의미하지 않지만, 취약점이 존재할 경우 공격 악용 저항성을 낮출 수 있음."
+  elif $r=="F-02" then "민감한 Key/SSH 관련 파일에서 그룹 또는 기타 사용자에 대한 읽기 권한이 확인되어 Key Material이 불필요하게 노출될 가능성이 있음."
+  elif $r=="F-03" then "펌웨어 Credential 관련 데이터에서 취약한 Unix-MD5($1$) 비밀번호 해시 형식이 확인됨."
+  elif $r=="F-04" then "Telnet 서비스 구성요소와 시작 또는 서비스 설정 참조가 함께 확인되어 Telnet 원격 서비스가 사용되도록 구성된 정황이 확인됨."
+  elif $r=="F-05" then "Web 인터페이스 영역에서 명령 실행 관련 문자열이 확인되었으며 Web 서비스 구성요소가 존재함. 현재 정적 분석만으로 실제 Command Injection 경로가 확인된 것은 아님."
+  elif $r=="F-06" then "다수의 사용자 영역 ELF에서 주요 Binary Hardening 설정 미흡이 반복적으로 확인되어 펌웨어 전반의 보호기법 적용 수준이 낮은 것으로 판단됨."
+  elif $r=="F-07" then "Firmware Update 관련 메커니즘에서 검증 부재 또는 취약한 검증 방식과 관련된 정적 근거가 확인되어 안전하지 않은 업데이트 가능성이 존재함."
+  elif $r=="F-08" then "펌웨어 내 구성요소 및 버전 정보와 알려진 취약 버전 관련 근거가 확인되어 취약한 구성요소 사용 가능성이 존재함."
+  else $x end;
+
+def kc($r;$x):
+  if $r=="F-01" then "해당 서비스의 실제 외부 노출 여부와 취약 코드 존재 여부를 추가 확인"
+  elif $r=="F-02" then "해당 Key의 실제 사용 서비스, 장비별 고유성 및 접근 가능한 계정 범위를 확인"
+  elif $r=="F-03" then "Credential store 접근 가능성과 해당 계정의 실제 사용 여부 및 권한을 확인"
+  elif $r=="F-04" then "실제 장비에서 Telnet 서비스 활성화 여부와 외부 접근 가능 범위를 확인"
+  elif $r=="F-05" then "사용자 입력값이 system/exec/popen 등 명령 실행 지점까지 전달되는지 Source-to-Sink 흐름을 확인"
+  elif $r=="F-06" then "펌웨어 빌드 정책 및 Toolchain의 Hardening 설정을 확인"
+  elif $r=="F-07" then "업데이트 파일의 서명·무결성 검증이 실제 업데이트 과정에서 강제되는지 확인"
+  elif $r=="F-08" then "구성요소의 정확한 버전과 적용 가능한 CVE 및 실제 취약 코드 포함 여부를 확인"
+  else $x end;
+
+def ki($r;$a):
+  if $r=="F-01" then ["취약점 존재 시 공격 악용 저항성 저하","네트워크 서비스 침해 가능성 증가","Memory-safety 취약점 존재 시 코드 실행 가능성 증가"]
+  elif $r=="F-02" then ["Private Key 유출","서비스 또는 장비 사칭","Key 용도에 따른 비인가 인증 가능성"]
+  elif $r=="F-03" then ["오프라인 비밀번호 크래킹","비인가 계정 접근","Credential 재사용 위험"]
+  elif $r=="F-04" then ["Credential 노출","비인가 원격 관리","관리 트래픽 노출"]
+  elif $r=="F-05" then ["사용자 입력이 명령 실행 지점에 도달할 경우 Command Injection 가능성","Web 서비스 침해 가능성"]
+  elif $r=="F-06" then ["펌웨어 전반의 공격 악용 저항성 저하 가능성"]
+  else $a end;
+
+def krem($r;$a):
+  if $r=="F-01" then ["지원되는 경우 Stack Protector 적용","PIE 적용","Full RELRO 적용","NX 활성화","불필요한 RPATH/RUNPATH 제거","불필요한 네트워크 노출 제한","네트워크 입력 처리 코드 검토"]
+  elif $r=="F-02" then ["Key 파일의 접근 권한을 소유 계정으로 제한","노출된 Key 교체","장비 간 Private Key 공유 금지","장비별 고유 Key Provisioning 적용"]
+  elif $r=="F-03" then ["MD5-crypt를 안전한 비밀번호 해시 방식으로 교체","고유하고 충분히 복잡한 Credential 사용","불필요한 기본/내장 계정 제거","영향받는 Credential 교체"]
+  elif $r=="F-04" then ["Telnet 서비스 비활성화","SSH 등 인증 및 암호화가 적용된 관리 프로토콜 사용","원격 관리 인터페이스를 신뢰할 수 있는 네트워크로 제한"]
+  elif $r=="F-05" then ["탐지된 Web 파일의 Source-to-Sink 데이터 흐름 점검","system/exec/popen 계열 호출 검토","Shell 명령 문자열 생성 대신 구조화된 API 사용","대상 기능에 대한 동적 검증 수행"]
+  elif $r=="F-06" then ["펌웨어 빌드 단계에서 Stack Canary, PIE, RELRO 등 Hardening 옵션 적용","공통 Toolchain 및 빌드 정책에서 보호기법 적용 여부 관리"]
+  else $a end;
+
 def supp($type;$title;$result;$check;$rem):
   (assets_for($type)) as $a |
   if ($a|length)==0 then empty else {
@@ -32,32 +83,32 @@ def supp($type;$title;$result;$check;$rem):
 
 ([$r.security_cases[]? | {
   kind:"security_case",rule_id:(.rule_id//""),finding_status:(.finding_status//"IDENTIFIED"),
-  title:(.title//"Security Finding"),severity:((.severity//"INFO")|ascii_upcase),confidence:((.confidence//"LOW")|ascii_upcase),
-  asset:(.asset//"-"),category:(.category//""),result:(.analysis//""),
+  title:kt((.rule_id//"");(.title//"Security Finding")),severity:((.severity//"INFO")|ascii_upcase),confidence:((.confidence//"LOW")|ascii_upcase),
+  asset:(.asset//"-"),category:(.category//""),result:kr((.rule_id//"");(.analysis//"")),
   basis:(((.evidence//[])+(.confidence_basis//[])) | if length>0 then join("; ") else "여러 정적 분석 관찰값의 상관분석을 통해 보안 Finding으로 분류됨" end),
-  analysis:(.analysis//""),additional_check:(.attack_scenario//""),impact:(.potential_impact//[]),remediation:(.remediation//[])
+  analysis:kr((.rule_id//"");(.analysis//"")),additional_check:kc((.rule_id//"");(.attack_scenario//"")),impact:ki((.rule_id//"");(.potential_impact//[])),remediation:krem((.rule_id//"");(.remediation//[]))
 }]) as $security |
 
 ([$r.systemic_findings[]? | {
   kind:"systemic",rule_id:(.rule_id//"F-06"),finding_status:(.finding_status//"IDENTIFIED"),
-  title:(.title//"Systemic Finding"),severity:((.severity//"INFO")|ascii_upcase),confidence:((.confidence//"HIGH")|ascii_upcase),
-  asset:"Firmware-wide",category:(.category//"systemic"),result:(.analysis//""),
+  title:kt((.rule_id//"F-06");(.title//"Systemic Finding")),severity:((.severity//"INFO")|ascii_upcase),confidence:((.confidence//"HIGH")|ascii_upcase),
+  asset:"Firmware-wide",category:(.category//"systemic"),result:kr((.rule_id//"F-06");(.analysis//"")),
   basis:(if ((.analysis_scope//{})|length)>0 then
     "분석 ELF "+((.analysis_scope.analyzed_executables//0)|tostring)+"개 중 "+((.analysis_scope.affected_executables//0)|tostring)+"개 ("+((.analysis_scope.affected_percentage//0)|tostring)+"%)에서 반복 패턴 확인"
     else "다수 바이너리에서 반복되는 보안 설정 패턴 확인" end),
-  analysis:(.analysis//""),additional_check:"펌웨어 빌드 정책 및 툴체인 Hardening 설정 확인",
-  impact:["펌웨어 전반의 exploit resistance 저하 가능성"],remediation:(.remediation//[])
+  analysis:kr((.rule_id//"F-06");(.analysis//"")),additional_check:kc((.rule_id//"F-06");"펌웨어 빌드 정책 및 Toolchain Hardening 설정 확인"),
+  impact:ki((.rule_id//"F-06");["펌웨어 전반의 exploit resistance 저하 가능성"]),remediation:krem((.rule_id//"F-06");(.remediation//[]))
 }]) as $systemic |
 
 ([
-  supp("update";"Firmware Update Mechanism";"펌웨어 업데이트 또는 검증과 관련된 정적 흔적이 확인됨";"업데이트 무결성 및 서명 검증이 실제로 강제되는지 확인";"업데이트 서명 검증과 무결성 검사를 릴리스 절차에 포함"),
-  supp("component";"Embedded Component Information";"오픈소스 또는 임베디드 구성요소 관련 정보가 확인됨";"정확한 버전과 알려진 취약점 존재 여부 확인";"구성요소 인벤토리를 관리하고 지원되는 안정 버전 사용"),
-  supp("web_interface";"Web / API Interface";"Web, CGI 또는 API 관리 인터페이스 관련 정적 흔적이 확인됨";"인증, 세션 처리 및 입력 검증 로직 확인";"관리 인터페이스 접근통제와 입력 검증 강화"),
-  supp("service";"Network Service Indicator";"네트워크 또는 원격 서비스 관련 실행파일 및 설정 흔적이 확인됨";"서비스의 실제 활성화 여부와 외부 노출 여부 확인";"불필요한 서비스를 비활성화하고 최소 노출 원칙 적용"),
-  supp("crypto";"Crypto / Key Material";"암호화 알고리즘 또는 Key/Certificate 관련 정적 흔적이 확인됨";"키 권한, 고유성 및 실제 사용 서비스 확인";"안전한 키 관리 정책 적용"),
-  supp("ssh";"SSH Material";"SSH 관련 Key 또는 설정 흔적이 확인됨";"장비별 고유 키 여부와 SSH 서비스 사용 정책 확인";"불필요한 SSH 접근 제한 및 키 수명주기 관리"),
-  supp("credential";"Credential Indicator";"계정, 비밀번호 또는 인증정보 관련 후보가 확인됨";"실제 하드코딩 또는 기본 자격증명 여부 확인";"하드코딩 자격증명을 제거하고 장비별 고유 자격증명 사용"),
-  supp("database";"Database / Stored Data";"Database 또는 저장 데이터 관련 파일이 확인됨";"민감정보 저장 여부 및 파일 접근 권한 확인";"민감정보 저장을 최소화하고 접근 권한 제한")
+  supp("update";"Firmware Update 관련 정보";"펌웨어 업데이트 또는 검증과 관련된 정적 흔적이 확인됨";"업데이트 무결성 및 서명 검증이 실제로 강제되는지 확인";"업데이트 서명 검증과 무결성 검사를 릴리스 절차에 포함"),
+  supp("component";"임베디드 구성요소 정보";"오픈소스 또는 임베디드 구성요소 관련 정보가 확인됨";"정확한 버전과 알려진 취약점 존재 여부 확인";"구성요소 인벤토리를 관리하고 지원되는 안정 버전 사용"),
+  supp("web_interface";"Web/API 인터페이스 정보";"Web, CGI 또는 API 관리 인터페이스 관련 정적 흔적이 확인됨";"인증, 세션 처리 및 입력 검증 로직 확인";"관리 인터페이스 접근통제와 입력 검증 강화"),
+  supp("service";"네트워크 서비스 탐지 정보";"네트워크 또는 원격 서비스 관련 실행파일 및 설정 흔적이 확인됨";"서비스의 실제 활성화 여부와 외부 노출 여부 확인";"불필요한 서비스를 비활성화하고 최소 노출 원칙 적용"),
+  supp("crypto";"Crypto/Key Material 정보";"암호화 알고리즘 또는 Key/Certificate 관련 정적 흔적이 확인됨";"Key 권한, 고유성 및 실제 사용 서비스 확인";"안전한 Key 관리 정책 적용"),
+  supp("ssh";"SSH 관련 정보";"SSH 관련 Key 또는 설정 흔적이 확인됨";"장비별 고유 Key 여부와 SSH 서비스 사용 정책 확인";"불필요한 SSH 접근 제한 및 Key 수명주기 관리"),
+  supp("credential";"Credential 관련 정보";"계정, 비밀번호 또는 인증정보 관련 후보가 확인됨";"실제 하드코딩 또는 기본 Credential 여부 확인";"하드코딩 Credential을 제거하고 장비별 고유 Credential 사용"),
+  supp("database";"Database/저장 데이터 정보";"Database 또는 저장 데이터 관련 파일이 확인됨";"민감정보 저장 여부 및 파일 접근 권한 확인";"민감정보 저장을 최소화하고 접근 권한 제한")
 ]) as $supp |
 
 (($security+$systemic+$supp) | sort_by([-(.severity|sev),.title]) | to_entries |
@@ -71,14 +122,17 @@ def ow($code;$cat;$summary;$ids;$status): {code:$code,category:$cat,summary:$sum
   (ids("F-03") as $i | if ($i|length)>0 then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"약한 Unix-MD5 비밀번호 해시 저장 Finding이 확인됨";$i;"Finding Identified")
     elif has_type("credential") then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"Credential 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
 
-  (ids("F-04") as $i | if ($i|length)>0 then ow("I2";"Insecure Network Services";"Legacy Telnet remote service 관련 Finding이 확인됨";$i;"Finding Identified")
+  (ids("F-04") as $i | if ($i|length)>0 then ow("I2";"Insecure Network Services";"Telnet 원격 서비스 관련 Finding이 확인됨";$i;"Finding Identified")
     elif has_type("service") then ow("I2";"Insecure Network Services";"네트워크 서비스 관련 정적 흔적은 있으나 insecure service Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
 
-  (ids("F-05") as $i | if ($i|length)>0 then ow("I3";"Insecure Ecosystem Interfaces";"Web command-execution 관련 Potential Finding이 확인됨";$i;"Potential Finding")
+  (ids("F-05") as $i | if ($i|length)>0 then ow("I3";"Insecure Ecosystem Interfaces";"Web 명령 실행 관련 Potential Finding이 확인됨";$i;"Potential Finding")
     elif has_type("web_interface") then ow("I3";"Insecure Ecosystem Interfaces";"Web/API 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
 
-  (if has_type("update") then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 또는 검증 관련 흔적이 확인되었으나 Secure Update 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
-  (if has_type("component") then ow("I5";"Use of Insecure or Outdated Components";"구성요소 또는 버전 관련 정보가 확인되었으나 알려진 취약 버전 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
+  (ids("F-07") as $i | if ($i|length)>0 then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 보안 관련 Potential Finding이 확인됨";$i;"Potential Finding")
+    elif has_type("update") then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 또는 검증 관련 흔적이 확인되었으나 Secure Update 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
+
+  (ids("F-08") as $i | if ($i|length)>0 then ow("I5";"Use of Insecure or Outdated Components";"취약한 구성요소 사용 관련 Potential Finding이 확인됨";$i;"Potential Finding")
+    elif has_type("component") then ow("I5";"Use of Insecure or Outdated Components";"구성요소 또는 버전 관련 정보가 확인되었으나 알려진 취약 버전 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
 
   (ids("F-02") as $i | if ($i|length)>0 then ow("I7";"Insecure Data Transfer and Storage";"민감 Key Material의 과도한 읽기 권한 Finding이 확인됨";$i;"Finding Identified")
     elif (has_type("crypto") or has_type("ssh")) then ow("I7";"Insecure Data Transfer and Storage";"Crypto 또는 SSH 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
@@ -88,14 +142,16 @@ def ow($code;$cat;$summary;$ids;$status): {code:$code,category:$cat,summary:$sum
 
 ([
   if any($findings[]?;.rule_id=="F-03") then {finding:"Credential 관련 Finding",meaning:"약한 비밀번호 해시로 인한 오프라인 크래킹 가능성",check:"Credential store 접근 및 계정 악용 여부",artifacts:"인증 로그, 계정 설정, Credential store"} else empty end,
-  if any($findings[]?;.rule_id=="F-02") then {finding:"Key / Crypto 관련 Finding",meaning:"키 유출 또는 인증 재사용 가능성",check:"장비별 고유 키 여부와 실제 사용 서비스",artifacts:"Key/Certificate metadata, TLS/SSH 설정"} else empty end,
+  if any($findings[]?;.rule_id=="F-02") then {finding:"Key/Crypto 관련 Finding",meaning:"Key 유출 또는 인증 재사용 가능성",check:"장비별 고유 Key 여부와 실제 사용 서비스",artifacts:"Key/Certificate metadata, TLS/SSH 설정"} else empty end,
   if any($findings[]?;(.rule_id=="F-01" or .rule_id=="F-04")) then {finding:"Network Service 관련 Finding",meaning:"원격 Attack Surface 또는 exploit resistance 저하",check:"서비스 활성화, 외부 노출, 비인가 세션",artifacts:"서비스 설정, init 설정, 네트워크 로그"} else empty end,
-  if any($findings[]?;.rule_id=="F-05") then {finding:"Web Interface 관련 Finding",meaning:"관리 인터페이스 악용 가능성",check:"사용자 입력에서 명령 실행 sink까지의 흐름",artifacts:"Web/CGI source, Web log, Dynamic request result"} else empty end,
+  if any($findings[]?;.rule_id=="F-05") then {finding:"Web Interface 관련 Finding",meaning:"관리 인터페이스 악용 가능성",check:"사용자 입력에서 명령 실행 지점까지의 흐름",artifacts:"Web/CGI source, Web log, Dynamic request result"} else empty end,
   if any($findings[]?;(.rule_id=="F-01" or .rule_id=="F-06")) then {finding:"Binary Hardening 관련 Finding",meaning:"취약점 존재 시 악용 난이도에 영향",check:"대상 ELF 우선 정적 분석",artifacts:"ELF metadata, Decompile result"} else empty end
 ]) as $cert |
 
-([$findings[]? as $f | $f.remediation[]? | select(type=="string" and length>0) | {priority:$f.severity,recommendation:.}]
- | unique_by(.recommendation) | sort_by([-(.priority|sev),.recommendation])) as $rem |
+(["CRITICAL","HIGH","MEDIUM","LOW","INFO"] | map(. as $s |
+  ([$findings[]? | select(.severity==$s) | .remediation[]? | select(type=="string" and length>0)] | unique) as $rs |
+  select(($rs|length)>0) | {severity:$s,recommendations:$rs}
+)) as $rem |
 
 ([$findings[]? | select(.kind!="supplementary" and .finding_status=="IDENTIFIED" and (.confidence=="HIGH" or .confidence=="MEDIUM"))]) as $validated |
 ([$validated[]?|select(.severity=="CRITICAL")]|length) as $cv |
@@ -169,19 +225,20 @@ def td($x): "<td>"+($x|e)+"</td>";
 def code($x): "<code>"+($x|e)+"</code>";
 def metric($l;$v;$c): "<div class=\"metric\"><div class=\"label\">"+$l+"</div><div class=\"value "+$c+"\">"+($v|tostring)+"</div></div>";
 def badge($s): (if $s=="Finding Identified" then "found" elif $s=="Potential Finding" then "potential" else "partial" end) as $c | "<span class=\"badge "+$c+"\">"+($s|e)+"</span>";
+def bullets($a): "<ul>"+([$a[]|"<li>"+(.|e)+"</li>"]|join(""))+"</ul>";
 
 "<h1>IoT Firmware Security Assessment</h1>"+
 "<div class=\"subtitle\">Static firmware analysis · IoT_fw_tool · Preventive Security Checkup</div>"+
 "<table><tr><th style=\"width:22%\">구분</th><th>내용</th></tr>"+
 "<tr>"+td("대상")+td(.target)+"</tr><tr>"+td("점검 방식")+td("펌웨어 파일 기반 정적 보안 점검")+"</tr>"+
-"<tr>"+td("분석 도구")+td("IoT_fw_tool")+"</tr><tr>"+td("기반 모듈")+td("binwalk / firmwalker-lite / checksec-lite")+"</tr>"+
+"<tr>"+td("분석 도구")+td("IoT_fw_tool")+"</tr><tr>"+td("기반 모듈")+td("binwalk-lite / firmwalker-lite / checksec-lite")+"</tr>"+
 "<tr>"+td("분석 범위")+td("Firmware 구조, 주요 설정·서비스·Web/API·Update·Component·Crypto/Key, 주요 ELF Hardening")+"</tr>"+
 "<tr>"+td("출력")+td("HTML / JSON / CSV")+"</tr></table>"+
 
 "<h2>1. 요약</h2><p>Overall Risk: <span class=\"risk "+(.summary.overall_risk|e)+"\">"+(.summary.overall_risk|e)+"</span></p>"+
 "<p class=\"subtitle\">주요 설정, 원격 서비스, Key/Certificate, Firmware Update, Component 정보와 주요 ELF 보호기법을 대상으로 예방적 정적 점검을 수행하였다. 자동 탐지 결과는 추가 검증이 필요한 보안 점검 후보를 포함한다.</p>"+
 "<div class=\"summary-grid\">"+metric("Critical";.summary.critical;"CRITICAL")+metric("High";.summary.high;"HIGH")+metric("Medium";.summary.medium;"MEDIUM")+metric("Findings";.summary.findings;"")+metric("Analyzed ELF";.summary.analyzed_elf;"")+metric("OWASP Evidence";.summary.owasp_evidence;"")+"</div>"+
-"<div class=\"note\">Raw Evidence는 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 자격증명 값, Private Key 본문 및 raw JSONL/TSV는 최종 보고서에 표시하지 않는다.</div>"+
+"<div class=\"note\">Raw Evidence는 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV는 최종 보고서에 표시하지 않는다.</div>"+
 
 "<h2>2. 점검 개요</h2><table><tr><th>항목</th><th>내용</th></tr>"+
 "<tr>"+td("점검 대상")+td(.target)+"</tr><tr>"+td("수행 환경")+td("Linux")+"</tr><tr>"+td("분석 방식")+td("Static Firmware Analysis")+"</tr>"+
@@ -192,7 +249,7 @@ def badge($s): (if $s=="Finding Identified" then "found" elif $s=="Potential Fin
 "<tr>"+td("분석 자산 수")+td(.metadata.asset_count)+"</tr><tr>"+td("주요 ELF 분석 대상")+td(.summary.analyzed_elf)+"</tr></table>"+
 
 "<h2>4. 점검 항목 매핑</h2><table><tr><th>점검 영역</th><th>주요 점검 항목</th><th>확인 정보</th><th>도구</th></tr>"+
-"<tr>"+td("Firmware Structure")+td("File system / compression / extraction")+td("펌웨어 구조 및 추출 가능 여부")+td("binwalk")+"</tr>"+
+"<tr>"+td("Firmware Structure")+td("File system / compression / extraction")+td("펌웨어 구조 및 추출 가능 여부")+td("binwalk-lite")+"</tr>"+
 "<tr>"+td("Credential")+td("Password / secret / token / account")+td("하드코딩 인증정보 후보")+td("firmwalker-lite")+"</tr>"+
 "<tr>"+td("Network Service")+td("Telnet / FTP / SSH / HTTP / UPnP")+td("서비스·설정·시작 흔적")+td("firmwalker-lite")+"</tr>"+
 "<tr>"+td("Web Interface")+td("CGI / API / login / session")+td("Web 관리 인터페이스 흔적")+td("firmwalker-lite")+"</tr>"+
@@ -215,8 +272,8 @@ else ([.findings[]|"<tr>"+td(.id)+td(.title)+td(.result)+"<td class=\""+(.severi
 else ([.findings[] | (if (.severity=="CRITICAL" or .severity=="HIGH") then "high" elif .severity=="MEDIUM" then "medium" else "" end) as $c |
 "<section class=\"finding "+$c+"\"><h3>"+(.id|e)+" · "+(.title|e)+" ["+(.severity|e)+"]</h3><table>"+
 "<tr><th style=\"width:22%\">위치</th><td>"+code(.asset)+"</td></tr><tr><th>점검 결과</th>"+td(.result)+"</tr>"+
-"<tr><th>확인 근거 요약</th>"+td(.basis)+"</tr><tr><th>보안 영향</th>"+td(if ((.impact//[])|length)>0 then (.impact|join("; ")) else (.analysis//"") end)+"</tr>"+
-"<tr><th>추가 확인</th>"+td(.additional_check//"")+"</tr><tr><th>조치 방안</th>"+td((.remediation//[])|join("; "))+"</tr></table></section>"]|join("")) end)+
+"<tr><th>확인 근거 요약</th>"+td(.basis)+"</tr><tr><th>보안 영향</th>"+(if ((.impact//[])|length)>0 then "<td>"+bullets(.impact)+"</td>" else td(.analysis//"") end)+"</tr>"+
+"<tr><th>추가 확인</th>"+td(.additional_check//"")+"</tr><tr><th>조치 방안</th>"+(if ((.remediation//[])|length)>0 then "<td>"+bullets(.remediation)+"</td>" else td("-") end)+"</tr></table></section>"]|join("")) end)+
 
 "<h2>8. CERT / DFIR 활용 관점</h2><table><tr><th>Finding</th><th>위협대응 의미</th><th>사고 발생 시 확인사항</th><th>권장 증적</th></tr>"+
 (if (.cert_dfir|length)==0 then "<tr><td colspan=\"4\">현재 Finding에서 별도 CERT/DFIR 매핑 항목이 생성되지 않았습니다.</td></tr>"
@@ -231,9 +288,10 @@ else "<table><tr><th>OWASP</th><th>Category</th><th>확인된 증거 요약</th>
 "<tr>"+td("Potential Finding")+td("보안 영향 가능성은 있으나 현재 정적 분석만으로 exploit path가 확정되지 않음")+"</tr>"+
 "<tr>"+td("Related Evidence Only")+td("관련 정적 흔적은 있으나 Finding 조건을 충족하지 않음")+"</tr></table>"+
 
-"<h2>10. 종합 조치 방안</h2><table><tr><th>우선순위</th><th>권고사항</th></tr>"+
-(if (.remediation|length)==0 then "<tr>"+td("Info")+td("현재 보고 결과에 따른 별도 조치 항목이 없습니다.")+"</tr>"
-else ([.remediation[]|"<tr>"+td(.priority)+td(.recommendation)+"</tr>"]|join("")) end)+"</table>"+
+"<h2>10. 종합 조치 방안</h2><p class=\"subtitle\">관련 위험도는 각 권고사항을 생성한 Finding의 위험도를 기준으로 표시한다.</p>"+
+"<table><tr><th style=\"width:18%\">관련 위험도</th><th>권고사항</th></tr>"+
+(if (.remediation|length)==0 then "<tr>"+td("INFO")+td("현재 보고 결과에 따른 별도 조치 항목이 없습니다.")+"</tr>"
+else ([.remediation[]|"<tr><td class=\""+(.severity|e)+"\">"+(.severity|e)+"</td><td>"+bullets(.recommendations)+"</td></tr>"]|join("")) end)+"</table>"+
 
 "<h2>11. 점검 범위 및 유의사항</h2><ul>"+([.limitations[]|"<li>"+(.|e)+"</li>"]|join(""))+"</ul>"+
 "<div class=\"footer\">IoT_fw_tool · Firmware Security Checkup Report</div>"
