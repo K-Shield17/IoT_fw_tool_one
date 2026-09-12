@@ -18,7 +18,6 @@ type output struct {
 	RUNPATH      *checksec.Result  `json:"runpath"`
 	Fortify      map[string]string `json:"fortify"`
 	SeparateCode *checksec.Result  `json:"separate_code"`
-	CFI          *checksec.Result  `json:"cfi"`
 	StackClash   *checksec.Result  `json:"stack_clash"`
 }
 
@@ -56,7 +55,6 @@ func main() {
 		RUNPATH:      checksec.RUNPATH(ef),
 		Fortify:      f,
 		SeparateCode: checksec.SeparateCode(ef),
-		CFI:          checksec.CFI(ef),
 		StackClash:   checksec.StackClash(ef),
 	}
 	enc := json.NewEncoder(os.Stdout)
