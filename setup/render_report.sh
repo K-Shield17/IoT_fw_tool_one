@@ -460,8 +460,9 @@ def details($f):
     "<tr><th>조치 방안</th><td>"+bullets($f.remediation//[])+"</td></tr></table>"
   else
     ([$f.detail_groups[] |
+      (.role//"-") as $role |
       "<div class=\"detail\"><table>"+
-      "<tr><th style=\"width:22%\">위치 / 자산 역할</th><td>"+assetroles(.asset_roles//[.assets[]|{asset:.,role:(.role//"-")}])+"</td></tr>"+
+      "<tr><th style=\"width:22%\">위치 / 자산 역할</th><td>"+assetroles(.asset_roles//[.assets[]|{asset:.,role:$role}])+"</td></tr>"+
       "<tr><th>확인된 문제</th><td>"+bullets(.problems//[])+"</td></tr>"+
       "<tr><th>정상 적용</th><td>"+bullets(.normal//[])+"</td></tr>"+
       "<tr><th>Context</th>"+td(.context//"-")+"</tr>"+
