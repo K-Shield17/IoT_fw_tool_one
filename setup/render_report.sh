@@ -194,7 +194,7 @@ def detail($r;$asset;$e;$analysis;$impact;$rem):
   } end;
 
 def detail_key:
-  [(.problems//[]|sort|join("|")),(.normal//[]|sort|join("|")),(.context//""),(.judgment//""),
+  [(.problems//[]|sort|join("|")),(.normal//[]|sort|join("|")),
    (.impact//[]|sort|join("|")),(.additional_check//""),(.remediation//[]|sort|join("|"))] | join("###");
 
 def supp($type;$title;$result;$check;$rem):
@@ -229,8 +229,15 @@ def supp($type;$title;$result;$check;$rem):
       role:$d[0].role,
       problems:$d[0].problems,
       normal:$d[0].normal,
-      context:$d[0].context,
-      judgment:$d[0].judgment,
+      context:($d[0].context|sub("^.* / ";"")),
+      judgment:(
+        if ($d|length)>1 then
+          "해당 실행파일들에서 "+(($d[0].problems|length)|tostring)+"개의 주요 보호기법 미흡이 동일하게 확인됨. "+
+          (if ($d[0].normal|length)>0 then "현재 정상 적용된 항목은 "+($d[0].normal|join(", "))+"임. " else "" end)+
+          (if ($d[0].context|test("Reference 확인$")) then "Startup/Config 참조가 확인되어 실제 서비스 구성에 포함된 정황이 있음."
+           elif ($d[0].context|test("Reference 미확인$")) then "Startup/Config 참조는 확인되지 않아 실제 실행 여부에 대한 추가 확인이 필요함."
+           else "실제 서비스 활성화 여부는 추가 확인이 필요함." end)
+        else $d[0].judgment end),
       impact:$d[0].impact,
       additional_check:$d[0].additional_check,
       remediation:$d[0].remediation
@@ -334,20 +341,26 @@ def cert($r;$finding;$meaning;$check;$artifacts):
 ]) as $cert |
 
 def hasrule($r): any($findings[]?;.rule_id==$r);
-def remgroup($severity;$items): ($items|map(select(.!=null))) as $x |
+def hassupp($t): any($findings[]?;.kind=="supplementary" and .category==$t);
+def remgroup($severity;$items): ($items|map(select(.!=null))|unique) as $x |
   if ($x|length)>0 then {severity:$severity,recommendations:$x} else empty end;
 
 ([
   remgroup("HIGH";[
-    if hasrule("F-02") then "민감 Key 접근 권한을 최소화하고 공유 Key 사용 시 장비별 고유 Key로 교체" else null end,
-    if hasrule("F-03") then "취약한 Unix-MD5 비밀번호 저장 방식을 안전한 해시 방식으로 변경하고 영향 Credential 교체" else null end,
-    if hasrule("F-04") then "Telnet을 비활성화하고 SSH 등 인증·암호화가 적용된 안전한 관리 프로토콜 사용" else null end
+    if hasrule("F-02") then "민감 Key 파일의 접근 권한을 최소화하고 공유 Key 사용 시 장비별 고유 Key로 교체" else null end,
+    if hasrule("F-03") then "취약한 Unix-MD5 비밀번호 저장 방식을 안전한 해시 방식으로 변경하고 영향받는 Credential 교체" else null end,
+    if hasrule("F-04") then "Telnet 서비스를 비활성화하고 SSH 등 인증·암호화가 적용된 안전한 관리 프로토콜 사용" else null end
   ]),
   remgroup("MEDIUM";[
     if (hasrule("F-01") or hasrule("F-06")) then "Firmware Toolchain 및 릴리스 빌드에 Stack Canary, PIE, Full RELRO, NX 등 공통 Binary Hardening 정책 적용" else null end,
-    if hasrule("F-05") then "Web 입력과 명령 실행 경로를 검토하고 외부 입력 검증 및 안전한 API 적용" else null end,
-    if hasrule("F-07") then "Firmware Update에 전자서명 기반 출처·무결성 검증을 적용하고 검증 실패 시 설치 차단" else null end,
-    if hasrule("F-08") then "구성요소 Version을 관리하고 취약하거나 지원 종료된 구성요소를 지원되는 보안 Version으로 업데이트" else null end
+    if hasrule("F-05") then "Web/관리 인터페이스의 외부 입력 검증을 강화하고 명령 실행 경로에 안전한 API 적용" else null end,
+    if hasrule("F-07") then "Firmware Update에 전자서명 기반 출처 검증과 무결성 검사를 적용하고 검증 실패 시 설치 차단" else null end,
+    if hasrule("F-08") then "구성요소 및 Version을 관리하고 알려진 취약점이 있거나 지원 종료된 구성요소를 안전한 Version으로 업데이트" else null end,
+    if (hassupp("service") or hassupp("web_interface")) then "불필요한 네트워크 서비스와 외부 노출을 최소화하고 관리 인터페이스의 접근 범위를 제한" else null end
+  ]),
+  remgroup("INFO";[
+    if (hassupp("ssh") or hassupp("crypto")) then "SSH Key 및 인증정보의 장비별 고유성·수명주기를 관리하고 불필요한 Key를 제거" else null end,
+    if (hassupp("credential") or hassupp("database")) then "민감정보 저장을 최소화하고 관련 파일 및 데이터의 접근 권한을 제한" else null end
   ])
 ] | sort_by(-(.severity|sev))) as $rem |
 
@@ -460,9 +473,8 @@ def details($f):
     "<tr><th>조치 방안</th><td>"+bullets($f.remediation//[])+"</td></tr></table>"
   else
     ([$f.detail_groups[] |
-      (.role//"-") as $role |
       "<div class=\"detail\"><table>"+
-      "<tr><th style=\"width:22%\">위치 / 자산 역할</th><td>"+assetroles(.asset_roles//[.assets[]|{asset:.,role:$role}])+"</td></tr>"+
+      "<tr><th style=\"width:22%\">위치 / 자산 역할</th><td>"+assetroles(.asset_roles//[.assets[]|{asset:.,role:(.role//"-")}])+"</td></tr>"+
       "<tr><th>확인된 문제</th><td>"+bullets(.problems//[])+"</td></tr>"+
       "<tr><th>정상 적용</th><td>"+bullets(.normal//[])+"</td></tr>"+
       "<tr><th>Context</th>"+td(.context//"-")+"</tr>"+
