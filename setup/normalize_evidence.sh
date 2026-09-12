@@ -56,8 +56,6 @@ while IFS= read -r line; do
         fortify:(.fortify.output // "Unknown"),
         separate_code:(.separate_code.value // "Unknown"),
         separate_code_status:(.separate_code.status // "unknown"),
-        cfi:(.cfi.value // "Unknown"),
-        cfi_status:(.cfi.status // "unknown"),
         stack_clash:(.stack_clash.value // "Unknown"),
         stack_clash_status:(.stack_clash.status // "unknown")
       }
