@@ -415,17 +415,15 @@ def casecount: (.case_count//1);
   remediation:$rem,
   metadata:{rootfs_name:$rootfs_name,asset_count:($as|length),extraction_status:"SUCCESS"},
   limitations:[
-    "본 보고서는 펌웨어 파일 기반 정적 점검 결과를 대상으로 한다.",
-    "Raw Evidence는 최종 보고서와 report.json에 포함하지 않는다.",
-    "자동 탐지 결과는 취약점 후보를 포함하므로 최종 판정에는 추가 검증이 필요하다.",
-    "Checksec 결과는 보호기법 적용 상태이며 실제 취약 코드 존재를 직접 의미하지 않는다.",
-    "구성요소 버전 정보만으로 알려진 취약점 존재 여부를 확정하지 않는다.",
-    "Firmware Update 관련 문자열만으로 Secure Update 동작의 안전성을 확정하지 않는다.",
-    "실제 서비스 활성화·외부 노출·인증 우회 가능성은 동적 분석 또는 실제 장비 검증이 필요하다.",
-    "Overall Risk는 Finding Rule 단위의 Severity, Confidence, 공격 표면 및 발생 범위를 종합한 내부 Firmware Risk Score를 기준으로 산정한다.",
+    "본 보고서는 펌웨어 파일을 기반으로 수행한 정적 보안 점검 결과이며 실제 장비의 실행 상태를 직접 분석하지 않는다.",
+    "자동 탐지 결과는 취약점 후보와 보안 상태 정보를 포함하므로 실제 취약 여부의 최종 판정에는 추가 검증이 필요하다.",
+    "Checksec 결과는 바이너리 보호기법 적용 상태를 나타내며 실제 취약 코드의 존재 또는 악용 가능성을 직접 의미하지 않는다.",
+    "실제 서비스 활성화, 외부 노출, 인증 우회 및 Source-to-Sink 연결 여부 등은 동적 분석 또는 실제 장비 검증이 필요하다.",
+    "구성요소 버전 정보와 Firmware Update 관련 문자열만으로 알려진 취약점 또는 Secure Update 동작의 안전성을 확정하지 않는다.",
     "동일 Finding Rule이 여러 위치에서 확인된 경우 개별 Finding으로 중복 가산하지 않고 발생 범위로 반영한다.",
-    "INFO 및 LOW Confidence Potential Finding은 Overall Risk를 직접 결정하지 않는다.",
-    "OWASP IoT Mapping은 현재 펌웨어에서 Finding 또는 관련 정적 Evidence가 확인된 항목만 표시한다."
+    "Overall Risk는 Finding Rule 단위의 Severity, Confidence, 공격 표면 및 발생 범위를 종합한 내부 Firmware Risk Score를 기준으로 산정하며 INFO 및 LOW Confidence Potential Finding은 이를 직접 결정하지 않는다.",
+    "OWASP IoT Mapping은 현재 펌웨어에서 Finding 또는 관련 정적 Evidence가 확인된 항목만 표시한다.",
+    "Raw Evidence는 최종 보고서에 포함하지 않으며 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV는 표시하지 않는다."
   ]
 }
 ' > "$REPORT_JSON"
@@ -448,11 +446,11 @@ cat > "$REPORT_HTML" <<'EOF'
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,'Malgun Gothic','Noto Sans KR',sans-serif;line-height:1.55}
 .wrap{max-width:1120px;margin:14px auto 40px;padding:0 14px}h1{font-size:28px;margin:0 0 8px}h2{font-size:21px;margin:30px 0 12px;border-bottom:2px solid #cfd5dd;padding-bottom:7px}h3{font-size:17px;margin:20px 0 9px}h4{font-size:15px;margin:18px 0 8px}
 .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px}table{width:100%;border-collapse:collapse;margin:10px 0 20px;font-size:14px}th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}th{background:var(--head)}
-code{background:#f2f4f7;padding:1px 5px;border-radius:4px;font-family:Consolas,monospace;word-break:break-all}.paths code{display:block;margin:3px 0}.summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 18px}
+code{background:#f2f4f7;padding:1px 5px;border-radius:4px;font-family:Consolas,monospace;word-break:break-all}.paths code{display:inline-block;margin:2px 3px 2px 0}.asset-role{margin:3px 0 8px}.asset-role strong{display:block;margin-bottom:3px;font-size:13px}.summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 18px}
 .metric{border:1px solid var(--line);border-radius:10px;padding:13px}.metric .label{font-size:12px;color:#475467}.metric .value{font-size:23px;font-weight:700}.HIGH{color:var(--high)}.MEDIUM{color:var(--med)}.LOW{color:var(--low)}.INFO{color:var(--info)}
 .risk{font-weight:800}.note{background:#f8fafc;border-left:4px solid #94a3b8;padding:11px 13px;font-size:13px;margin:12px 0 18px}.finding{border:1px solid var(--line);border-left:5px solid #98a2b3;border-radius:7px;padding:15px 16px 4px;margin:15px 0 22px}
 .finding.high{border-left-color:var(--high)}.finding.medium{border-left-color:var(--med)}.finding.low{border-left-color:var(--low)}.finding.info{border-left-color:var(--info)}.detail{border-top:1px solid #dbe2ea;margin-top:14px;padding-top:5px}.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-weight:700}.found{background:#fee4e2;color:#912018}.potential{background:#fef0c7;color:#93370d}.partial{background:#e0f2fe;color:#075985}
-.footer{margin-top:35px;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:12px}@media(max-width:900px){.summary-grid{grid-template-columns:repeat(3,1fr)}}@media print{.wrap{max-width:none;margin:0}.summary-grid{grid-template-columns:repeat(6,1fr)}table,.finding{break-inside:avoid}}
+.limitations{font-size:13px;color:#344054;padding-left:20px}.limitations li{margin:4px 0}.footer{margin-top:35px;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:12px}@media(max-width:900px){.summary-grid{grid-template-columns:repeat(3,1fr)}}@media print{.wrap{max-width:none;margin:0}.summary-grid{grid-template-columns:repeat(6,1fr)}table,.finding{break-inside:avoid}}
 </style>
 </head>
 <body><div class="wrap">
@@ -466,7 +464,7 @@ def metric($l;$v;$c): "<div class=\"metric\"><div class=\"label\">"+$l+"</div><d
 def badge($s): (if $s=="Finding Identified" then "found" elif $s=="Potential Finding" then "potential" else "partial" end) as $c | "<span class=\"badge "+$c+"\">"+($s|e)+"</span>";
 def bullets($a): if (($a//[])|length)==0 then "-" else "<ul>"+([$a[]|"<li>"+(.|e)+"</li>"]|join(""))+"</ul>" end;
 def paths($a): "<div class=\"paths\">"+([$a[]|code(.)]|join(""))+"</div>";
-def assetroles($a): "<div class=\"paths\">"+([$a[]|code(.asset)+" — "+(.role|e)]|join(""))+"</div>";
+def assetroles($a): ($a|sort_by(.role,.asset)|group_by(.role)) as $g | "<div class=\"paths\">"+([$g[]|"<div class=\"asset-role\"><strong>"+((.[0].role//"-")|e)+"</strong><div>"+([.[].asset|code(.)]|join(", "))+"</div></div>"]|join(""))+"</div>";
 
 def details($f):
   if (($f.detail_groups//[])|length)==0 then
@@ -503,7 +501,7 @@ def details($f):
 "<p class=\"subtitle\">Overall Risk는 개별 Finding의 최고 위험도를 그대로 사용하지 않고 Finding의 심각도, 탐지 신뢰도, 공격 표면 및 펌웨어 내 발생 범위를 종합하여 산정한다.</p>"+
 "<div class=\"summary-grid\">"+metric("High";.summary.high;"HIGH")+metric("Medium";.summary.medium;"MEDIUM")+metric("Low";.summary.low;"LOW")+metric("Info";.summary.info;"INFO")+metric("Analyzed ELF";.summary.analyzed_elf;"")+metric("OWASP Evidence";.summary.owasp_evidence;"")+"</div>"+
 "<div class=\"note\">Risk Components · Severity "+(.summary.risk_components.severity|tostring)+" / Confidence "+(.summary.risk_components.confidence|tostring)+" / Exposure "+(.summary.risk_components.exposure|tostring)+" / Prevalence "+(.summary.risk_components.prevalence|tostring)+"</div>"+
-"<div class=\"note\">Raw Evidence는 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV는 최종 보고서에 표시하지 않는다.</div>"+
+
 
 "<h2>2. 점검 개요</h2><table><tr><th>항목</th><th>내용</th></tr>"+
 "<tr>"+td("점검 대상")+td(.target)+"</tr><tr>"+td("수행 환경")+td("Linux")+"</tr><tr>"+td("분석 방식")+td("Static Firmware Analysis")+"</tr>"+
@@ -559,7 +557,7 @@ else "<table><tr><th>OWASP</th><th>Category</th><th>확인된 증거 요약</th>
 (if (.remediation|length)==0 then "<tr>"+td("INFO")+td("현재 보고 결과에 따른 별도 조치 항목이 없습니다.")+"</tr>"
 else ([.remediation[]|"<tr><td class=\""+(.severity|e)+"\">"+(.severity|e)+"</td><td>"+bullets(.recommendations//[])+"</td></tr>"]|join("")) end)+"</table>"+
 
-"<h2>11. 점검 범위 및 유의사항</h2><ul>"+([.limitations[]|"<li>"+(.|e)+"</li>"]|join(""))+"</ul>"+
+"<h2>11. 점검 범위 및 유의사항</h2><ul class=\"limitations\">"+([.limitations[]|"<li>"+(.|e)+"</li>"]|join(""))+"</ul>"+
 "<div class=\"footer\">IoT_fw_tool · Firmware Security Checkup Report</div>"
 ' "$REPORT_JSON" >> "$REPORT_HTML"
 
