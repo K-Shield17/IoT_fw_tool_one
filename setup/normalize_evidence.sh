@@ -11,7 +11,11 @@ while IFS=$'\t' read -r category severity path evidence; do
   case "$category" in
     service) property="service_indicator" ;;
     credential) property="credential_indicator" ;;
+    credential_default) property="default_credential_indicator" ;;
+    credential_assignment) property="credential_assignment_indicator" ;;
     crypto) property="crypto_material" ;;
+    crypto_weak_indicator) property="weak_crypto_indicator" ;;
+    crypto_weak_context) property="weak_crypto_security_context" ;;
     ssh) property="ssh_material" ;;
     sensitive_pattern) property="sensitive_pattern" ;;
     config) property="configuration_file" ;;
