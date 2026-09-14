@@ -155,6 +155,46 @@ if (( exec_total >= 10 )); then
     '{rule_id:$rule_id,finding_status:(if $severity=="INFO" then "INFORMATIONAL" else "IDENTIFIED" end),title:$title,severity:$severity,confidence:$confidence,asset:$asset,category:"systemic_hardening",analysis:$analysis,affected_assets:$assets,analysis_scope:{scope:"Firmware-wide",analyzed_executables:($total|tonumber),affected_executables:($affected|tonumber),affected_percentage:($pct|tonumber),no_canary:($canary|tonumber),pie_disabled:($pie|tonumber),weak_relro:($relro|tonumber)},threshold_basis:{minimum_executables:10,medium_percentage:50,low_percentage:20,note:"Internal systemic-pattern threshold; not an external vulnerability standard."},remediation:$remediation}' >> "$SYSTEMIC"
 fi
 
+# F-07: Hard-coded / Default Credentials
+default_cred_evidence="$(jq -c 'select(.source=="firmwalker" and .type=="credential_default")' "$EVIDENCE" || true)"
+if [[ -n "$default_cred_evidence" ]]; then
+  count="$(printf '%s\n' "$default_cred_evidence" | grep -c . || true)"; affected_assets="$(printf '%s\n' "$default_cred_evidence" | jq -s '[.[].asset] | unique')"; primary_asset="$(jq -r '.[0] // "-"' <<<"$affected_assets")"
+  evidence_json="$(jq -cn --argjson assets "$affected_assets" --arg count "$count" '["Default/hard-coded credential indicators: "+$count,"Affected files: "+($assets|join(", "))]')"
+  severity_basis='{"attack_exposure":"AUTHENTICATION_INTERFACE_DEPENDENT","exploit_preconditions":"DEFAULT_OR_HARDCODED_CREDENTIAL_REMAINS_ACTIVE","potential_impact":"HIGH","reason":"A known default/hard-coded credential pattern was directly identified in firmware content."}'
+  confidence_basis='["Known default credential pattern directly detected in firmware content","Affected firmware file paths directly identified"]'
+  case_id=$((case_id+1))
+  emit_case "CASE-$(printf '%03d' "$case_id")" "F-07" "IDENTIFIED" "Hard-coded or default credentials detected" "HIGH" "HIGH" "$primary_asset" "hardcoded_default_credentials" \
+    "Known default or hard-coded credential patterns were identified in firmware content. Generic credential-assignment indicators alone are not sufficient to generate this finding." \
+    "An attacker discovers or knows the embedded/default credential → the credential remains active on a reachable authentication interface → unauthorized access may be obtained." \
+    '["Unauthorized authentication","Administrative access if privileged credentials remain active","Credential reuse across devices if shared defaults are used"]' \
+    '["Remove hard-coded/default credentials","Require unique per-device credentials","Force credential change during provisioning or first use","Do not embed reusable administrative secrets in firmware"]' \
+    "$evidence_json" "$severity_basis" "$confidence_basis"
+fi
+
+# F-08: Weak / Deprecated Cryptography
+weak_crypto_evidence="$(jq -c 'select(.source=="firmwalker" and .type=="crypto_weak_context")' "$EVIDENCE" || true)"
+if [[ -n "$weak_crypto_evidence" ]]; then
+  filtered_crypto="$TMP/f08_crypto.jsonl"; : > "$filtered_crypto"
+  while IFS= read -r crypto_line; do
+    [[ -z "$crypto_line" ]] && continue
+    crypto_asset="$(jq -r '.asset' <<<"$crypto_line")"
+    if ! jq -e --arg a "$crypto_asset" 'select(.source=="firmwalker" and .asset==$a and (.value|contains("Unix-MD5 password hash")))' "$EVIDENCE" >/dev/null 2>&1; then printf '%s\n' "$crypto_line" >> "$filtered_crypto"; fi
+  done <<< "$weak_crypto_evidence"
+  if [[ -s "$filtered_crypto" ]]; then
+    count="$(grep -c . "$filtered_crypto" || true)"; affected_assets="$(jq -s '[.[].asset] | unique' "$filtered_crypto")"; primary_asset="$(jq -r '.[0] // "-"' <<<"$affected_assets")"
+    evidence_json="$(jq -cn --argjson assets "$affected_assets" --arg count "$count" '["Weak/deprecated cryptographic algorithm with nearby security context: "+$count,"Affected files: "+($assets|join(", "))]')"
+    severity_basis='{"attack_exposure":"CONTEXT_DEPENDENT","exploit_preconditions":"WEAK_ALGORITHM_USED_IN_SECURITY_RELEVANT_OPERATION","potential_impact":"MEDIUM_TO_HIGH_DEPENDING_ON_USE","reason":"A weak/deprecated cryptographic indicator was observed near security-relevant context; direct runtime data flow is not established by this static evidence."}'
+    confidence_basis='["Weak/deprecated cryptographic algorithm indicator directly detected","Security-relevant context detected within the configured proximity window","Runtime cryptographic data flow not directly observed"]'
+    case_id=$((case_id+1))
+    emit_case "CASE-$(printf '%03d' "$case_id")" "F-08" "IDENTIFIED" "Weak or deprecated cryptography detected in security-relevant context" "MEDIUM" "MEDIUM" "$primary_asset" "weak_cryptography" \
+      "Weak or deprecated cryptographic algorithm indicators were found near security-relevant context in firmware content. Algorithm-name occurrences without such context do not generate this finding." \
+      "A security-sensitive operation relies on a weak or deprecated algorithm → an attacker targets the weakened confidentiality, integrity, authentication, or verification property → protected data or trust decisions may be compromised depending on actual use." \
+      '["Reduced cryptographic assurance","Potential compromise of confidentiality or integrity depending on algorithm use","Potential weakening of authentication or verification mechanisms"]' \
+      '["Replace deprecated algorithms with currently recommended cryptographic primitives","Review the affected code/configuration to confirm actual algorithm use","Use modern password hashing for credentials","Use modern authenticated encryption and signature/hash algorithms appropriate to the security function"]' \
+      "$evidence_json" "$severity_basis" "$confidence_basis"
+  fi
+fi
+
 # Kernel modules: informational only
 ko_count="$(jq -r 'select(.source=="checksec" and (.asset|endswith(".ko"))) | .asset' "$EVIDENCE" | sort -u | wc -l | tr -d ' ')"
 if (( ko_count > 0 )); then
