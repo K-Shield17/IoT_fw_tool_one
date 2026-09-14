@@ -419,7 +419,6 @@ def casecount: (.case_count//1);
     "동일 Finding Rule이 여러 위치에서 확인된 경우 개별 Finding으로 중복 계산하지 않고 발생 범위로 반영한다.",
     "Raw Evidence는 최종 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV 등은 표시하지 않는다."
 ]
-  ]
 }
 ' > "$REPORT_JSON"
 
