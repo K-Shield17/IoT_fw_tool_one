@@ -202,7 +202,7 @@ def supp($type;$title;$result;$check;$rem):
   if ($a|length)==0 then empty else {
     kind:"supplementary",rule_id:"",finding_status:"INFORMATIONAL",title:$title,severity:"INFO",confidence:"LOW",
     asset:(if ($a|length)==1 then $a[0] else $a[0]+" 외 "+((($a|length)-1)|tostring)+"개" end),
-    locations:$a,category:$type,result:$result,basis:"관련 경로 "+(($a|length)|tostring)+"개에서 해당 유형의 정적 탐지 결과 확인",
+    locations:$a,category:$type,result:$result,basis:("관련 경로 "+(($a|length)|tostring)+"개에서 해당 유형의 정적 탐지 결과 확인"),
     analysis:$result,additional_check:$check,impact:[],remediation:[$rem],detail_groups:[]
   } end;
 
