@@ -73,17 +73,25 @@ while IFS= read -r p; do
 done < "$TEXT_CANDIDATES"
 
 # High-signal credential/default strings. A match is evidence, not a confirmed vulnerability.
-CREDENTIAL_PATTERNS=(
-  'password=' 'passwd=' 'pwd=' 'secret=' 'token=' 'api_key=' 'apikey=' 'client_secret='
-  'admin:admin' 'admin:password' 'root:root' 'guest:guest'
-)
-for pattern in "${CREDENTIAL_PATTERNS[@]}"; do
+DEFAULT_CREDENTIAL_PATTERNS=('admin:admin' 'admin:password' 'root:root' 'guest:guest')
+CREDENTIAL_ASSIGNMENT_PATTERNS=('password=' 'passwd=' 'pwd=' 'secret=' 'token=' 'api_key=' 'apikey=' 'client_secret=')
+for pattern in "${DEFAULT_CREDENTIAL_PATTERNS[@]}"; do
   while IFS= read -r p; do
     [[ -f "$p" ]] || continue
     if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
       r="$(relpath "$p")"
       echo "$pattern -> $r" >> "$FILE"
-      emit sensitive_pattern HIGH "$r" "matched pattern: $pattern"
+      emit credential_default HIGH "$r" "default credential indicator: $pattern"
+    fi
+  done < "$TEXT_CANDIDATES"
+done
+for pattern in "${CREDENTIAL_ASSIGNMENT_PATTERNS[@]}"; do
+  while IFS= read -r p; do
+    [[ -f "$p" ]] || continue
+    if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
+      r="$(relpath "$p")"
+      echo "$pattern -> $r" >> "$FILE"
+      emit credential_assignment MEDIUM "$r" "credential assignment indicator: $pattern"
     fi
   done < "$TEXT_CANDIDATES"
 done
@@ -259,12 +267,25 @@ msg "***Cryptographic algorithm and encoding indicators***"
 WEAK_CRYPTO=('MD5' 'SHA1' 'SHA-1' 'DES' '3DES' 'RC4' 'ECB')
 MODERN_CRYPTO=('AES' 'SHA256' 'SHA-256' 'SHA512' 'SHA-512' 'RSA' 'ECDSA' 'TLS')
 ENCODING_PATTERNS=('base64' 'xor')
+CRYPTO_SECURITY_CONTEXT=('password' 'passwd' 'auth' 'authentication' 'encrypt' 'encryption' 'decrypt' 'signature' 'verify' 'checksum' 'integrity' 'certificate' 'private key')
 for pattern in "${WEAK_CRYPTO[@]}"; do
   while IFS= read -r p; do
     [[ -f "$p" ]] || continue
-    if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
-      emit crypto MEDIUM "$(relpath "$p")" "legacy/weak crypto indicator: $pattern"
-    fi
+    matches="$(grep -aIniF -- "$pattern" "$p" 2>/dev/null || true)"
+    [[ -n "$matches" ]] || continue
+    r="$(relpath "$p")"
+    emit crypto_weak_indicator INFO "$r" "legacy/weak crypto indicator: $pattern"
+    while IFS=: read -r lineno _; do
+      [[ "$lineno" =~ ^[0-9]+$ ]] || continue
+      start=$((lineno > 3 ? lineno - 3 : 1)); end=$((lineno + 3)); context=""
+      for ctx in "${CRYPTO_SECURITY_CONTEXT[@]}"; do
+        if sed -n "${start},${end}p" "$p" 2>/dev/null | grep -aIqiF -- "$ctx"; then context="$ctx"; break; fi
+      done
+      if [[ -n "$context" ]]; then
+        emit crypto_weak_context MEDIUM "$r" "weak crypto indicator with nearby security context: $pattern; context: $context"
+        break
+      fi
+    done <<< "$matches"
   done < "$TEXT_CANDIDATES"
 done
 for pattern in "${MODERN_CRYPTO[@]}"; do
