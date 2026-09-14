@@ -7,7 +7,7 @@ SORTED="$OUTDIR/raw/correlated.sorted.json"; REPORT_JSON="$OUTDIR/report.json"; 
 TARGET="$(basename "$OUTDIR")"; ROOTFS_NAME="$(basename "${ROOTFS%/}")"
 
 jq '
-def sev: if .=="CRITICAL" then 4 elif .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 else 0 end;
+def sev: if .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 elif .=="INFO" then 0 else 0 end;
 def conf: if .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 else 0 end;
 .security_cases |= sort_by([-(.severity|sev),-(.confidence|conf),.rule_id,.asset])
 ' "$CORRELATED" > "$SORTED"
@@ -15,7 +15,7 @@ def conf: if .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 else 
 jq -n --arg tool "IoT_fw_tool" --arg target "$TARGET" --arg rootfs_name "$ROOTFS_NAME" \
 --slurpfile c "$SORTED" --slurpfile ev "$EVIDENCE" --slurpfile as "$ASSETS" '
 
-def sev: if .=="CRITICAL" then 4 elif .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 else 0 end;
+def sev: if .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 elif .=="INFO" then 0 else 0 end;
 def conf: if .=="HIGH" then 3 elif .=="MEDIUM" then 2 elif .=="LOW" then 1 else 0 end;
 def assets_for($t): [$ev[]? | select((.type//"")==$t) | (.asset//empty)] | map(select(.!="")) | unique;
 def has_type($t): (assets_for($t)|length)>0;
@@ -261,14 +261,14 @@ def supp($type;$title;$result;$check;$rem):
   kind:"systemic",rule_id:(.rule_id//"F-06"),finding_status:(.finding_status//"IDENTIFIED"),
   title:kt((.rule_id//"F-06");(.title//"Systemic Finding")),
   severity:((.severity//"INFO")|ascii_upcase),confidence:((.confidence//"HIGH")|ascii_upcase),
-  asset:"Firmware-wide",locations:["Firmware-wide"],category:(.category//"systemic"),
+  asset:(.asset//"-"),locations:(.affected_assets//[.asset//"-"]),scope:((.analysis_scope.scope//"Firmware-wide")),category:(.category//"systemic"),
   result:kr((.rule_id//"F-06");(.analysis//"")),
   analysis:kr((.rule_id//"F-06");(.analysis//"")),
   impact:ki((.rule_id//"F-06");(.potential_impact//[])),
   additional_check:kc((.rule_id//"F-06");""),
   remediation:krem((.rule_id//"F-06");(.remediation//[])),
   detail_groups:[{
-    assets:["Firmware-wide"],role:"Firmware Build / Toolchain",
+    asset_roles:[(.affected_assets//[])[]|{asset:.,role:"User-space Executable"}],assets:(.affected_assets//[.asset//"-"]),role:"Firmware Build / Toolchain",scope:((.analysis_scope.scope//"Firmware-wide")),
     problems:["다수 사용자 영역 ELF에서 Binary Hardening 미흡 반복"],
     normal:[],
     context:((.analysis_scope//{}) as $x |
@@ -276,8 +276,8 @@ def supp($type;$title;$result;$check;$rem):
       ($x.affected_executables//$x.weak_executables//$x.weak_count//null) as $affected |
       ($x.affected_percentage//$x.weak_percentage//$x.weak_percent//null) as $pct |
       if ($total!=null and $affected!=null) then
-        "분석 ELF "+($total|tostring)+"개 중 "+($affected|tostring)+"개"+(if $pct!=null then " ("+($pct|tostring)+"%)" else "" end)+"에서 반복 패턴 확인"
-      else "다수 바이너리에서 반복되는 Hardening 미흡 패턴 확인" end),
+        "분석 ELF "+($total|tostring)+"개 중 "+($affected|tostring)+"개"+(if $pct!=null then " ("+($pct|tostring)+"%)" else "" end)+"에서 반복 패턴 확인 · 분석 범위: "+($x.scope//"Firmware-wide")
+      else "다수 바이너리에서 반복되는 Hardening 미흡 패턴 확인 · 분석 범위: "+($x.scope//"Firmware-wide") end),
     judgment:"여러 사용자 영역 ELF에서 유사한 Hardening 미흡이 반복되어 개별 바이너리뿐 아니라 공통 Toolchain 또는 빌드 정책 수준의 문제 가능성이 있음.",
     impact:ki((.rule_id//"F-06");(.potential_impact//[])),
     additional_check:kc((.rule_id//"F-06");""),
@@ -353,9 +353,14 @@ def remgroup($severity;$items): ($items|map(select(.!=null))|unique) as $x |
   ]),
   remgroup("MEDIUM";[
     if (hasrule("F-01") or hasrule("F-06")) then "Firmware Toolchain 및 릴리스 빌드에 Stack Canary, PIE, Full RELRO, NX 등 공통 Binary Hardening 정책 적용" else null end,
-    if hasrule("F-05") then "Web/관리 인터페이스의 외부 입력 검증을 강화하고 명령 실행 경로에 안전한 API 적용" else null end,
+    if hasrule("F-04") then "Telnet 구성요소의 실제 활성화 여부를 확인하고 불필요한 경우 제거 또는 비활성화" else null end,
     if hasrule("F-07") then "Firmware Update에 전자서명 기반 출처 검증과 무결성 검사를 적용하고 검증 실패 시 설치 차단" else null end,
-    if hasrule("F-08") then "구성요소 및 Version을 관리하고 알려진 취약점이 있거나 지원 종료된 구성요소를 안전한 Version으로 업데이트" else null end,
+    if hasrule("F-08") then "구성요소 및 Version을 관리하고 알려진 취약점이 있거나 지원 종료된 구성요소를 안전한 Version으로 업데이트" else null end
+  ]),
+  remgroup("LOW";[
+    if hasrule("F-01") then "보호기법이 미흡한 네트워크 서비스 ELF를 확인하고 필요한 Binary Hardening 설정을 보완" else null end,
+    if hasrule("F-05") then "Web/관리 인터페이스의 명령 실행 관련 경로를 검토하고 외부 입력과 실행 함수 간 Source-to-Sink 연결 여부 확인" else null end,
+    if hasrule("F-06") then "반복적으로 Hardening이 미흡한 ELF를 확인하고 공통 빌드 정책 적용 여부 검토" else null end,
     if (hassupp("service") or hassupp("web_interface")) then "불필요한 네트워크 서비스와 외부 노출을 최소화하고 관리 인터페이스의 접근 범위를 제한" else null end
   ]),
   remgroup("INFO";[
@@ -366,7 +371,7 @@ def remgroup($severity;$items): ($items|map(select(.!=null))|unique) as $x |
 
 ([$findings[]? | select(.kind!="supplementary" and .finding_status=="IDENTIFIED" and (.confidence=="HIGH" or .confidence=="MEDIUM"))]) as $validated |
 
-def svscore: if .=="CRITICAL" then 100 elif .=="HIGH" then 75 elif .=="MEDIUM" then 50 elif .=="LOW" then 25 else 0 end;
+def svscore: if .=="HIGH" then 100 elif .=="MEDIUM" then 60 elif .=="LOW" then 25 else 0 end;
 def cfscore: if .=="HIGH" then 100 elif .=="MEDIUM" then 70 elif .=="LOW" then 40 else 0 end;
 def exposed: (.category=="network_service_hardening" or .category=="legacy_remote_service" or .rule_id=="F-04" or .rule_id=="F-05");
 def systemic: (.kind=="systemic" or .rule_id=="F-06");
@@ -384,7 +389,7 @@ def casecount: (.case_count//1);
  end) as $prevalence_score |
 
 ((($severity_score*0.45)+($confidence_score*0.20)+($exposure_score*0.20)+($prevalence_score*0.15))|round) as $risk_score |
-(if $risk_score>=90 then "CRITICAL" elif $risk_score>=65 then "HIGH" elif $risk_score>=35 then "MEDIUM" else "LOW" end) as $risk |
+(if $risk_score>=65 then "HIGH" elif $risk_score>=35 then "MEDIUM" else "LOW" end) as $risk |
 
 {
   tool:$tool,target:$target,
@@ -396,7 +401,6 @@ def casecount: (.case_count//1);
       exposure:($exposure_score|round),
       prevalence:($prevalence_score|round)
     },
-    critical:([$findings[]?|select(.severity=="CRITICAL")]|length),
     high:([$findings[]?|select(.severity=="HIGH")]|length),
     medium:([$findings[]?|select(.severity=="MEDIUM")]|length),
     low:([$findings[]?|select(.severity=="LOW")]|length),
@@ -440,14 +444,14 @@ cat > "$REPORT_HTML" <<'EOF'
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>IoT Firmware Security Assessment</title>
 <style>
-:root{--bg:#fff;--text:#172b4d;--muted:#5e6c84;--line:#cfd8e3;--head:#edf2f7;--critical:#7a0a0a;--high:#c21f1f;--med:#d4a017;--low:#2f5d8a}
+:root{--bg:#fff;--text:#172b4d;--muted:#5e6c84;--line:#cfd8e3;--head:#edf2f7;--high:#c21f1f;--med:#d97706;--low:#ca8a04;--info:#2563eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,'Malgun Gothic','Noto Sans KR',sans-serif;line-height:1.55}
 .wrap{max-width:1120px;margin:14px auto 40px;padding:0 14px}h1{font-size:28px;margin:0 0 8px}h2{font-size:21px;margin:30px 0 12px;border-bottom:2px solid #cfd5dd;padding-bottom:7px}h3{font-size:17px;margin:20px 0 9px}h4{font-size:15px;margin:18px 0 8px}
 .subtitle{color:var(--muted);font-size:13px;margin-bottom:20px}table{width:100%;border-collapse:collapse;margin:10px 0 20px;font-size:14px}th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}th{background:var(--head)}
 code{background:#f2f4f7;padding:1px 5px;border-radius:4px;font-family:Consolas,monospace;word-break:break-all}.paths code{display:block;margin:3px 0}.summary-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:14px 0 18px}
-.metric{border:1px solid var(--line);border-radius:10px;padding:13px}.metric .label{font-size:12px;color:#475467}.metric .value{font-size:23px;font-weight:700}.CRITICAL{color:var(--critical)}.HIGH{color:var(--high)}.MEDIUM{color:var(--med)}.LOW{color:var(--low)}
+.metric{border:1px solid var(--line);border-radius:10px;padding:13px}.metric .label{font-size:12px;color:#475467}.metric .value{font-size:23px;font-weight:700}.HIGH{color:var(--high)}.MEDIUM{color:var(--med)}.LOW{color:var(--low)}.INFO{color:var(--info)}
 .risk{font-weight:800}.note{background:#f8fafc;border-left:4px solid #94a3b8;padding:11px 13px;font-size:13px;margin:12px 0 18px}.finding{border:1px solid var(--line);border-left:5px solid #98a2b3;border-radius:7px;padding:15px 16px 4px;margin:15px 0 22px}
-.finding.high{border-left-color:var(--high)}.finding.medium{border-left-color:var(--med)}.detail{border-top:1px solid #dbe2ea;margin-top:14px;padding-top:5px}.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-weight:700}.found{background:#fee4e2;color:#912018}.potential{background:#fef0c7;color:#93370d}.partial{background:#e0f2fe;color:#075985}
+.finding.high{border-left-color:var(--high)}.finding.medium{border-left-color:var(--med)}.finding.low{border-left-color:var(--low)}.finding.info{border-left-color:var(--info)}.detail{border-top:1px solid #dbe2ea;margin-top:14px;padding-top:5px}.badge{display:inline-block;padding:4px 9px;border-radius:999px;font-weight:700}.found{background:#fee4e2;color:#912018}.potential{background:#fef0c7;color:#93370d}.partial{background:#e0f2fe;color:#075985}
 .footer{margin-top:35px;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:12px}@media(max-width:900px){.summary-grid{grid-template-columns:repeat(3,1fr)}}@media print{.wrap{max-width:none;margin:0}.summary-grid{grid-template-columns:repeat(6,1fr)}table,.finding{break-inside:avoid}}
 </style>
 </head>
@@ -497,7 +501,7 @@ def details($f):
 
 "<h2>1. 요약</h2><p>Overall Risk: <span class=\"risk "+(.summary.overall_risk|e)+"\">"+(.summary.overall_risk|e)+"</span> <span class=\"subtitle\">(Firmware Risk Score "+(.summary.risk_score|tostring)+"/100)</span></p>"+
 "<p class=\"subtitle\">Overall Risk는 개별 Finding의 최고 위험도를 그대로 사용하지 않고 Finding의 심각도, 탐지 신뢰도, 공격 표면 및 펌웨어 내 발생 범위를 종합하여 산정한다.</p>"+
-"<div class=\"summary-grid\">"+metric("Critical";.summary.critical;"CRITICAL")+metric("High";.summary.high;"HIGH")+metric("Medium";.summary.medium;"MEDIUM")+metric("Findings";.summary.findings;"")+metric("Analyzed ELF";.summary.analyzed_elf;"")+metric("OWASP Evidence";.summary.owasp_evidence;"")+"</div>"+
+"<div class=\"summary-grid\">"+metric("High";.summary.high;"HIGH")+metric("Medium";.summary.medium;"MEDIUM")+metric("Low";.summary.low;"LOW")+metric("Info";.summary.info;"INFO")+metric("Analyzed ELF";.summary.analyzed_elf;"")+metric("OWASP Evidence";.summary.owasp_evidence;"")+"</div>"+
 "<div class=\"note\">Risk Components · Severity "+(.summary.risk_components.severity|tostring)+" / Confidence "+(.summary.risk_components.confidence|tostring)+" / Exposure "+(.summary.risk_components.exposure|tostring)+" / Prevalence "+(.summary.risk_components.prevalence|tostring)+"</div>"+
 "<div class=\"note\">Raw Evidence는 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV는 최종 보고서에 표시하지 않는다.</div>"+
 
@@ -519,12 +523,11 @@ def details($f):
 "<tr>"+td("Crypto / Key")+td("Legacy/modern crypto / certificate / key")+td("암호화 및 Key Material 후보")+td("firmwalker-lite")+"</tr>"+
 "<tr>"+td("Binary Hardening")+td("RELRO / Canary / NX / PIE / Fortify / Separate Code / Stack Clash")+td("주요 ELF 보호기법 상태")+td("checksec-lite")+"</tr></table>"+
 
-"<h2>5. 위험도 등급 기준</h2><table><tr><th>등급</th><th>기준</th></tr>"+
-"<tr>"+td("Critical")+td("펌웨어 전반에서 매우 높은 수준의 위험이 확인되어 즉각적인 대응이 필요한 상태")+"</tr>"+
-"<tr>"+td("High")+td("직접적인 보안 영향이 크고 우선 대응 및 검증이 필요한 상태")+"</tr>"+
-"<tr>"+td("Medium")+td("추가 조건이 필요하지만 공격 표면 또는 악용 난이도에 영향을 줄 수 있는 상태")+"</tr>"+
-"<tr>"+td("Low")+td("즉각적인 악용 가능성은 낮지만 개선이 필요한 상태")+"</tr>"+
-"<tr>"+td("Info")+td("취약점으로 확정하지 않고 보안 상태 및 추가 분석 우선순위를 판단하기 위한 탐지 정보")+"</tr></table>"+
+"<h2>5. 위험도 및 정보 등급 기준</h2><table><tr><th>등급</th><th>기준</th></tr>"+
+"<tr><td class=\"HIGH\"><strong>HIGH</strong></td>"+td("직접적인 보안 문제가 명확하게 확인되고 공격 시 영향이 커 우선적인 대응이 필요한 상태")+"</tr>"+
+"<tr><td class=\"MEDIUM\"><strong>MEDIUM</strong></td>"+td("보안 문제가 확인되었으나 실제 악용을 위해 추가 조건이 필요하거나 공격 가능성이 제한되는 상태")+"</tr>"+
+"<tr><td class=\"LOW\"><strong>LOW</strong></td>"+td("직접적인 악용 가능성은 낮지만 보안 강화 또는 추가 검토가 필요한 상태")+"</tr>"+
+"<tr><td class=\"INFO\"><strong>INFO</strong></td>"+td("취약점으로 판단하지 않으며 보안 상태 및 후속 분석을 위해 참고하는 정보")+"</tr></table>"+
 
 "<h2>6. 진단 결과 요약</h2><table><tr><th>ID</th><th>점검 항목</th><th>진단 결과</th><th>위험도</th><th>위치</th></tr>"+
 (if (.findings|length)==0 then "<tr><td colspan=\"5\">보고 임계치를 충족한 Finding이 없습니다.</td></tr>"
@@ -533,7 +536,7 @@ else ([.findings[]|"<tr>"+td(.id)+td(.title)+td(.result)+"<td class=\""+(.severi
 "<h2>7. 진단 상세</h2><p class=\"subtitle\">동일 Finding에서 실제 보안 상태와 분석 결과가 동일한 대상은 하나의 상세 항목으로 통합하고, 해당하는 모든 경로를 표시한다. 상태 또는 Context가 다른 대상은 별도로 구분한다.</p>"+
 (if (.findings|length)==0 then "<div class=\"note\">상세 분석 대상으로 분류된 Finding이 없습니다.</div>"
 else ([.findings[] |
-  (if (.severity=="CRITICAL" or .severity=="HIGH") then "high" elif .severity=="MEDIUM" then "medium" else "" end) as $c |
+  (if .severity=="HIGH" then "high" elif .severity=="MEDIUM" then "medium" elif .severity=="LOW" then "low" else "info" end) as $c |
   "<section class=\"finding "+$c+"\"><h3>"+(.id|e)+" · "+(.title|e)+" ["+(.severity|e)+"]</h3>"+details(.)+"</section>"
 ]|join("")) end)+
 
