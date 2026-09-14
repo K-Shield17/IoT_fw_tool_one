@@ -322,21 +322,18 @@ def ow($code;$cat;$summary;$ids;$status):
   (if has_type("config") then ow("I9";"Insecure Default Settings";"보안 관련 Configuration 흔적이 확인되어 기본 설정 검토가 필요함";[];"Related Evidence Only") else empty end)
 ]) as $owasp |
 
-def cert($r;$finding;$meaning;$check;$artifacts):
-  if any($findings[]?;.rule_id==$r) then
-    {rule_id:$r,finding:$finding,meaning:$meaning,check:$check,artifacts:$artifacts}
+def certtext($r):
+  if $r=="F-01" then {finding:"네트워크 서비스 바이너리 보호기법 미흡",meaning:"침해 발생 시 해당 네트워크 서비스가 초기 진입점 또는 취약점 악용 대상이었는지 확인",check:"서비스 실행·외부 노출·Crash·비정상 입력 및 해당 프로세스의 행위를 확인",artifacts:"서비스 설정, 네트워크 로그, Process 정보, Core dump, 대상 ELF"}
+  elif $r=="F-02" then {finding:"민감 Key 노출",meaning:"공격자가 노출된 Key Material을 획득하거나 인증에 재사용했는지 확인",check:"해당 Key 사용 서비스, Key 접근 범위, 동일 Key 공유 여부와 비정상 인증을 확인",artifacts:"Key/Certificate metadata, SSH/TLS 설정, 인증 로그"}
+  elif $r=="F-03" then {finding:"취약한 Credential 저장",meaning:"Credential store 탈취 및 오프라인 크래킹 이후 계정 악용 여부 확인",check:"Credential store 접근, 비정상 로그인, 영향 계정과 권한을 확인",artifacts:"passwd/shadow, 인증 로그, 계정 설정"}
+  elif $r=="F-04" then {finding:"Telnet 원격 서비스",meaning:"Telnet 관리 채널을 통한 비인가 원격 접근 여부 확인",check:"Telnet 활성화 시점, 접속 출발지, 로그인 계정 및 세션 이후 행위를 확인",artifacts:"인증 로그, Telnet 관련 설정, 네트워크 로그, Process 정보"}
+  elif $r=="F-05" then {finding:"Web 명령 실행 가능성",meaning:"Web 인터페이스가 명령 실행 또는 초기 침투 경로로 악용되었는지 확인",check:"의심 요청, 입력값, 실행된 명령 및 Web 프로세스의 자식 프로세스를 확인",artifacts:"Web/CGI 파일, HTTP 로그, Process tree, 네트워크 로그"}
+  elif $r=="F-06" then {finding:"펌웨어 전반의 Hardening 미흡",meaning:"침해된 프로세스와 동일한 빌드 정책을 사용하는 다른 ELF의 공격 노출 범위를 확인",check:"침해 대상 ELF와 동일 Toolchain으로 빌드된 실행파일의 보호기법 상태를 확인",artifacts:"ELF metadata, Build/Toolchain 설정, Decompile 결과"}
+  elif $r=="F-07" then {finding:"하드코딩·기본 Credential",meaning:"공격자가 펌웨어에 포함된 기본 또는 하드코딩 Credential을 인증에 사용했는지 확인",check:"영향 계정, Credential 변경 여부, 로그인 출발지 및 인증 성공 기록을 확인",artifacts:"Credential 설정, 인증 로그, 계정 설정, 관련 Firmware 파일"}
+  elif $r=="F-08" then {finding:"취약·폐기 암호 알고리즘",meaning:"약한 암호 방식이 실제 보안 기능에 사용되어 침해 또는 우회에 영향을 주었는지 확인",check:"알고리즘 사용 위치, 관련 인증·검증·암호화 흐름 및 공격 흔적을 확인",artifacts:"Crypto 설정, 관련 Firmware 파일, 인증·검증 로그, 대상 Binary"}
   else empty end;
 
-([
-  cert("F-01";"네트워크 서비스 바이너리 보호기법 미흡";"침해 발생 시 해당 네트워크 서비스가 초기 진입점 또는 취약점 악용 대상이었는지 확인";"서비스 실행·외부 노출·Crash·비정상 입력 및 해당 프로세스의 행위를 확인";"서비스 설정, 네트워크 로그, Process 정보, Core dump, 대상 ELF"),
-  cert("F-02";"민감 Key 노출";"공격자가 노출된 Key Material을 획득하거나 인증에 재사용했는지 확인";"해당 Key 사용 서비스, Key 접근 범위, 동일 Key 공유 여부와 비정상 인증을 확인";"Key/Certificate metadata, SSH/TLS 설정, 인증 로그"),
-  cert("F-03";"취약한 Credential 저장";"Credential store 탈취 및 오프라인 크래킹 이후 계정 악용 여부 확인";"Credential store 접근, 비정상 로그인, 영향 계정과 권한을 확인";"passwd/shadow, 인증 로그, 계정 설정"),
-  cert("F-04";"Telnet 원격 서비스";"Telnet 관리 채널을 통한 비인가 원격 접근 여부 확인";"Telnet 활성화 시점, 접속 출발지, 로그인 계정 및 세션 이후 행위를 확인";"인증 로그, Telnet 관련 설정, 네트워크 로그, Process 정보"),
-  cert("F-05";"Web 명령 실행 가능성";"Web 인터페이스가 명령 실행 또는 초기 침투 경로로 악용되었는지 확인";"의심 요청, 입력값, 실행된 명령 및 Web 프로세스의 자식 프로세스를 확인";"Web/CGI 파일, HTTP 로그, Process tree, 네트워크 로그"),
-  cert("F-06";"펌웨어 전반의 Hardening 미흡";"침해된 프로세스와 동일한 빌드 정책을 사용하는 다른 ELF의 공격 노출 범위를 확인";"침해 대상 ELF와 동일 Toolchain으로 빌드된 실행파일의 보호기법 상태를 확인";"ELF metadata, Build/Toolchain 설정, Decompile 결과"),
-  cert("F-07";"하드코딩·기본 Credential";"공격자가 펌웨어에 포함된 기본 또는 하드코딩 Credential을 인증에 사용했는지 확인";"영향 계정, Credential 변경 여부, 로그인 출발지 및 인증 성공 기록을 확인";"Credential 설정, 인증 로그, 계정 설정, 관련 Firmware 파일"),
-  cert("F-08";"취약·폐기 암호 알고리즘";"약한 암호 방식이 실제 보안 기능에 사용되어 침해 또는 우회에 영향을 주었는지 확인";"알고리즘 사용 위치, 관련 인증·검증·암호화 흐름 및 공격 흔적을 확인";"Crypto 설정, 관련 Firmware 파일, 인증·검증 로그, 대상 Binary")
-]) as $cert |
+([$findings[]? | select(.kind!="supplementary" and (.rule_id//"")!="") | . as $f | certtext($f.rule_id) as $c | {id:$f.id,rule_id:$f.rule_id,finding:$c.finding,locations:($f.locations//[$f.asset//"-"]),meaning:$c.meaning,check:$c.check,artifacts:$c.artifacts}]) as $cert |
 
 def hasrule($r): any($findings[]?;.rule_id==$r);
 def hassupp($t): any($findings[]?;.kind=="supplementary" and .category==$t);
@@ -422,6 +419,7 @@ def casecount: (.case_count//1);
     "동일 Finding Rule이 여러 위치에서 확인된 경우 개별 Finding으로 중복 계산하지 않고 발생 범위로 반영한다.",
     "Raw Evidence는 최종 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV 등은 표시하지 않는다."
 ]
+  ]
 }
 ' > "$REPORT_JSON"
 
@@ -535,9 +533,9 @@ else ([.findings[] |
   "<section class=\"finding "+$c+"\"><h3>"+(.id|e)+" · "+(.title|e)+" ["+(.severity|e)+"]</h3>"+details(.)+"</section>"
 ]|join("")) end)+
 
-"<h2>8. CERT / DFIR 활용 관점</h2><table><tr><th>관련 Finding</th><th>사고 대응 관점</th><th>사고 발생 시 확인사항</th><th>권장 증적</th></tr>"+
-(if (.cert_dfir|length)==0 then "<tr><td colspan=\"4\">현재 Finding에서 별도 CERT/DFIR 매핑 항목이 생성되지 않았습니다.</td></tr>"
-else ([.cert_dfir[]|"<tr>"+td(.rule_id+" · "+.finding)+td(.meaning)+td(.check)+td(.artifacts)+"</tr>"]|join("")) end)+"</table>"+
+"<h2>8. CERT / DFIR 활용 관점</h2><table><tr><th>관련 Finding</th><th>발견 대상</th><th>사고 대응 관점</th><th>사고 발생 시 확인사항</th><th>권장 증적</th></tr>"+
+(if (.cert_dfir|length)==0 then "<tr><td colspan=\"5\">현재 Finding에서 별도 CERT/DFIR 매핑 항목이 생성되지 않았습니다.</td></tr>"
+else ([.cert_dfir[]|"<tr>"+td(.id+" · "+.finding)+"<td>"+paths(.locations//[])+"</td>"+td(.meaning)+td(.check)+td(.artifacts)+"</tr>"]|join("")) end)+"</table>"+
 "<div class=\"note\">CERT / DFIR 항목은 실제 발생한 Finding Rule에 따라 생성된다. 정상 펌웨어에 존재하는 서비스·설정·Key 파일은 그 자체로 IOC가 아니며 실제 침해 판단에는 로그, 서비스 상태 및 네트워크 행위 등 추가 증거가 필요하다.</div>"+
 
 "<h2>9. OWASP IoT Top 10 증거 매핑</h2><p class=\"subtitle\">OWASP IoT Top 10 전체 항목이 아니라 현재 펌웨어에서 Security Finding 또는 관련 정적 Evidence가 확인된 항목만 표시한다.</p>"+
