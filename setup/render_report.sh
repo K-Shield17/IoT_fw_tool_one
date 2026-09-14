@@ -415,15 +415,15 @@ def casecount: (.case_count//1);
   remediation:$rem,
   metadata:{rootfs_name:$rootfs_name,asset_count:($as|length),extraction_status:"SUCCESS"},
   limitations:[
-    "본 보고서는 펌웨어 파일을 기반으로 수행한 정적 보안 점검 결과이며 실제 장비의 실행 상태를 직접 분석하지 않는다.",
-    "자동 탐지 결과는 취약점 후보와 보안 상태 정보를 포함하므로 실제 취약 여부의 최종 판정에는 추가 검증이 필요하다.",
-    "Checksec 결과는 바이너리 보호기법 적용 상태를 나타내며 실제 취약 코드의 존재 또는 악용 가능성을 직접 의미하지 않는다.",
-    "실제 서비스 활성화, 외부 노출, 인증 우회 및 Source-to-Sink 연결 여부 등은 동적 분석 또는 실제 장비 검증이 필요하다.",
-    "구성요소 버전 정보와 Firmware Update 관련 문자열만으로 알려진 취약점 또는 Secure Update 동작의 안전성을 확정하지 않는다.",
-    "동일 Finding Rule이 여러 위치에서 확인된 경우 개별 Finding으로 중복 가산하지 않고 발생 범위로 반영한다.",
-    "Overall Risk는 Finding Rule 단위의 Severity, Confidence, 공격 표면 및 발생 범위를 종합한 내부 Firmware Risk Score를 기준으로 산정하며 INFO 및 LOW Confidence Potential Finding은 이를 직접 결정하지 않는다.",
-    "OWASP IoT Mapping은 현재 펌웨어에서 Finding 또는 관련 정적 Evidence가 확인된 항목만 표시한다.",
-    "Raw Evidence는 최종 보고서에 포함하지 않으며 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV는 표시하지 않는다."
+    "본 보고서는 펌웨어 파일 기반 정적 보안 점검 결과이며, 실제 장비의 실행 상태를 직접 분석하지 않는다.",
+    "점검 결과는 정상적으로 추출 및 분석 가능한 펌웨어 영역을 대상으로 하며, 암호화·손상·비표준 구조 등으로 분석되지 않은 영역은 점검 범위에서 제외될 수 있다.",
+    "자동 탐지 결과는 취약점 후보 및 보안 상태 정보를 포함하며, 실제 취약 여부의 최종 판정에는 추가 검증이 필요하다.",
+    "Finding이 확인되지 않은 경우에도 취약점이 존재하지 않음을 보장하지 않으며, 본 도구의 분석 범위와 정의된 탐지 Rule 내에서 확인되지 않았음을 의미한다.",
+    "Binary Hardening 결과는 보호기법 적용 상태를 의미하며, 실제 취약 코드의 존재 또는 악용 가능성을 직접 의미하지 않는다.",
+    "서비스 활성화·외부 노출, 인증 우회, Source-to-Sink 연결 등 실행 환경에 따라 달라지는 항목은 동적 분석 또는 실제 장비 검증이 필요하다.",
+    "동일 Finding Rule이 여러 위치에서 확인된 경우 개별 Finding으로 중복 계산하지 않고 발생 범위로 반영한다.",
+    "Raw Evidence는 최종 보고서에 포함하지 않는다. 전체 grep/strings 출력, 원문 Credential 값, Private Key 본문 및 raw JSONL/TSV 등은 표시하지 않는다."
+]
   ]
 }
 ' > "$REPORT_JSON"
