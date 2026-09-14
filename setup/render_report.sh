@@ -33,8 +33,8 @@ def kt($r;$t):
   elif $r=="F-04" then "레거시 원격 서비스 활성화"
   elif $r=="F-05" then "Web 인터페이스의 잠재적 명령 실행 경로"
   elif $r=="F-06" then "펌웨어 전반의 바이너리 보호기법 미흡"
-  elif $r=="F-07" then "잠재적으로 안전하지 않은 펌웨어 업데이트"
-  elif $r=="F-08" then "잠재적으로 취약한 구성요소 사용"
+  elif $r=="F-07" then "하드코딩 또는 기본 인증정보 사용"
+  elif $r=="F-08" then "보안 관련 영역의 취약하거나 폐기된 암호 알고리즘 사용"
   else $t end;
 
 def kr($r;$x):
@@ -44,8 +44,8 @@ def kr($r;$x):
   elif $r=="F-04" then "레거시 Telnet 원격 서비스가 시작 또는 서비스 설정에서 활성화된 흔적이 확인됨."
   elif $r=="F-05" then "Web 경로에서 명령 실행 관련 문자열이 확인되어 잠재적 명령 실행 경로로 분류됨."
   elif $r=="F-06" then "다수의 사용자 영역 ELF에서 바이너리 보호기법 미흡 패턴이 반복적으로 확인됨."
-  elif $r=="F-07" then "업데이트 검증 관련 정적 분석 결과에서 Secure Update 보장 여부를 추가 확인해야 하는 조건이 확인됨."
-  elif $r=="F-08" then "구성요소 또는 버전 정보에서 알려진 취약 버전 가능성을 추가 확인해야 하는 조건이 확인됨."
+  elif $r=="F-07" then "펌웨어에서 알려진 기본 또는 하드코딩 인증정보 패턴이 직접 확인됨."
+  elif $r=="F-08" then "취약하거나 폐기된 암호 알고리즘이 보안 관련 Context와 근접하여 확인됨."
   else $x end;
 
 def ki($r;$a):
@@ -55,8 +55,8 @@ def ki($r;$a):
   elif $r=="F-04" then ["평문 기반 원격 관리 채널과 불필요한 원격 Attack Surface가 증가할 수 있음"]
   elif $r=="F-05" then ["입력값이 명령 실행 Sink까지 연결되는 경우 원격 명령 실행으로 이어질 수 있음"]
   elif $r=="F-06" then ["취약점 존재 시 펌웨어 전반에서 exploit resistance가 낮아질 수 있음"]
-  elif $r=="F-07" then ["업데이트 검증이 충분하지 않을 경우 변조된 펌웨어 설치 위험으로 이어질 수 있음"]
-  elif $r=="F-08" then ["실제 취약 버전일 경우 해당 구성요소의 알려진 취약점에 노출될 수 있음"]
+  elif $r=="F-07" then ["기본 또는 하드코딩 인증정보가 활성 상태로 유지될 경우 비인가 인증 및 관리자 접근으로 이어질 수 있음"]
+  elif $r=="F-08" then ["실제 보안 기능에서 취약하거나 폐기된 알고리즘이 사용될 경우 기밀성·무결성·인증 또는 검증 강도가 저하될 수 있음"]
   else $a end;
 
 def kc($r;$x):
@@ -66,8 +66,8 @@ def kc($r;$x):
   elif $r=="F-04" then "실제 장비에서 Telnet 활성화 여부, 외부 접근 가능 범위 및 인증 정책을 확인"
   elif $r=="F-05" then "사용자 입력이 system/exec/popen 등 명령 실행 지점까지 전달되는 Source-to-Sink 흐름을 확인"
   elif $r=="F-06" then "펌웨어 빌드 정책 및 Toolchain Hardening 설정을 확인"
-  elif $r=="F-07" then "업데이트 파일의 서명·무결성 검증이 실제 업데이트 과정에서 강제되는지 확인"
-  elif $r=="F-08" then "구성요소의 정확한 버전과 적용 가능한 CVE 및 실제 취약 코드 포함 여부를 확인"
+  elif $r=="F-07" then "탐지된 인증정보가 실제 인증 경로에서 활성 상태인지, 장비별 고유 값인지 및 변경 가능 여부를 확인"
+  elif $r=="F-08" then "탐지된 알고리즘이 실제 보안 기능에서 사용되는지와 구체적인 암호 처리 흐름을 확인"
   else $x end;
 
 def krem($r;$a):
@@ -77,8 +77,8 @@ def krem($r;$a):
   elif $r=="F-04" then ["Telnet 원격 서비스를 비활성화하고 필요한 원격 관리 기능은 SSH 등 암호화된 프로토콜로 전환"]
   elif $r=="F-05" then ["외부 입력과 명령 실행 함수 사이의 Source-to-Sink 흐름을 검토하고 안전한 API 및 입력 검증 적용"]
   elif $r=="F-06" then ["반복적인 Hardening 미흡을 방지하도록 Firmware Toolchain 및 릴리스 빌드에 공통 Hardening 정책 적용"]
-  elif $r=="F-07" then ["업데이트 패키지에 전자서명 기반 출처 검증과 무결성 검사를 적용하고 검증 실패 시 설치 차단"]
-  elif $r=="F-08" then ["구성요소 버전을 식별·관리하고 알려진 취약점이 없는 지원 버전으로 업데이트"]
+  elif $r=="F-07" then ["하드코딩·기본 인증정보를 제거하고 장비별 고유 Credential을 사용하며 초기 설정 시 변경을 강제"]
+  elif $r=="F-08" then ["취약하거나 폐기된 암호 알고리즘을 현재 권고되는 안전한 암호 방식으로 교체"]
   else $a end;
 
 def ev_has($e;$p): any($e[]?;tostring|test($p;"i"));
@@ -177,15 +177,15 @@ def detail($r;$asset;$e;$analysis;$impact;$rem):
     impact:ki($r;$impact),additional_check:kc($r;""),remediation:krem($r;$rem)
   }
   elif $r=="F-07" then {
-    asset:$asset,role:"Firmware Update",
-    problems:["Secure Update 검증 여부 추가 확인 필요"],normal:[],
-    context:"Firmware Update 관련 정적 Evidence 확인",
+    asset:$asset,role:"Credential / Authentication",
+    problems:["하드코딩 또는 기본 인증정보 패턴 확인"],normal:[],
+    context:"Default Credential 관련 정적 Evidence 확인",
     judgment:kr($r;$analysis),impact:ki($r;$impact),additional_check:kc($r;""),remediation:krem($r;$rem)
   }
   elif $r=="F-08" then {
-    asset:$asset,role:"Embedded Component",
-    problems:["구성요소의 알려진 취약 버전 여부 추가 확인 필요"],normal:[],
-    context:"Component 및 Version 관련 정적 Evidence 확인",
+    asset:$asset,role:"Cryptographic Security",
+    problems:["취약하거나 폐기된 암호 알고리즘과 보안 관련 Context 확인"],normal:[],
+    context:"Weak Crypto 및 근접 Security Context 확인",
     judgment:kr($r;$analysis),impact:ki($r;$impact),additional_check:kc($r;""),remediation:krem($r;$rem)
   }
   else {
@@ -309,18 +309,16 @@ def ow($code;$cat;$summary;$ids;$status):
   {code:$code,category:$cat,summary:$summary,findings:(if ($ids|length)>0 then ($ids|join(", ")) else "-" end),status:$status};
 
 ([
-  (ids("F-03") as $i | if ($i|length)>0 then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"약한 Unix-MD5 비밀번호 해시 저장 Finding이 확인됨";$i;rule_status("F-03"))
-   elif has_type("credential") then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"Credential 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
+  ((ids("F-03")+ids("F-07")) as $i | if ($i|length)>0 then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"취약한 비밀번호 저장 또는 하드코딩·기본 Credential 관련 Finding이 확인됨";$i;(if (ids("F-07")|length)>0 then rule_status("F-07") else rule_status("F-03") end))
+   elif (has_type("credential") or has_type("credential_assignment")) then ow("I1";"Weak, Guessable, or Hardcoded Passwords";"Credential 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
   (ids("F-04") as $i | if ($i|length)>0 then ow("I2";"Insecure Network Services";"Telnet 원격 서비스 관련 Finding이 확인됨";$i;rule_status("F-04"))
    elif has_type("service") then ow("I2";"Insecure Network Services";"네트워크 서비스 관련 정적 흔적은 있으나 insecure service Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
   (ids("F-05") as $i | if ($i|length)>0 then ow("I3";"Insecure Ecosystem Interfaces";"Web 명령 실행 관련 Finding이 확인됨";$i;rule_status("F-05"))
    elif has_type("web_interface") then ow("I3";"Insecure Ecosystem Interfaces";"Web/API 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
-  (ids("F-07") as $i | if ($i|length)>0 then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 보안 관련 Finding이 확인됨";$i;rule_status("F-07"))
-   elif has_type("update") then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 또는 검증 관련 흔적이 확인되었으나 Secure Update 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
-  (ids("F-08") as $i | if ($i|length)>0 then ow("I5";"Use of Insecure or Outdated Components";"취약한 구성요소 사용 관련 Finding이 확인됨";$i;rule_status("F-08"))
-   elif has_type("component") then ow("I5";"Use of Insecure or Outdated Components";"구성요소 또는 버전 관련 정보가 확인되었으나 알려진 취약 버전 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
-  (ids("F-02") as $i | if ($i|length)>0 then ow("I7";"Insecure Data Transfer and Storage";"민감 Key Material의 과도한 읽기 권한 Finding이 확인됨";$i;rule_status("F-02"))
-   elif (has_type("crypto") or has_type("ssh")) then ow("I7";"Insecure Data Transfer and Storage";"Crypto 또는 SSH 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
+  (if has_type("update") then ow("I4";"Lack of Secure Update Mechanisms";"Firmware Update 또는 검증 관련 흔적이 확인되었으나 Secure Update 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
+  (if has_type("component") then ow("I5";"Use of Insecure or Outdated Components";"구성요소 또는 버전 관련 정보가 확인되었으나 알려진 취약 버전 여부는 확정하지 않음";[];"Related Evidence Only") else empty end),
+  ((ids("F-02")+ids("F-08")) as $i | if ($i|length)>0 then ow("I7";"Insecure Data Transfer and Storage";"민감 Key Material 또는 보안 관련 Weak Crypto Finding이 확인됨";$i;(if (ids("F-02")|length)>0 then rule_status("F-02") else rule_status("F-08") end))
+   elif (has_type("crypto") or has_type("ssh") or has_type("crypto_weak_indicator")) then ow("I7";"Insecure Data Transfer and Storage";"Crypto 또는 SSH 관련 정적 흔적은 있으나 취약 Finding 조건은 충족하지 않음";[];"Related Evidence Only") else empty end),
   (if has_type("config") then ow("I9";"Insecure Default Settings";"보안 관련 Configuration 흔적이 확인되어 기본 설정 검토가 필요함";[];"Related Evidence Only") else empty end)
 ]) as $owasp |
 
@@ -336,8 +334,8 @@ def cert($r;$finding;$meaning;$check;$artifacts):
   cert("F-04";"Telnet 원격 서비스";"Telnet 관리 채널을 통한 비인가 원격 접근 여부 확인";"Telnet 활성화 시점, 접속 출발지, 로그인 계정 및 세션 이후 행위를 확인";"인증 로그, Telnet 관련 설정, 네트워크 로그, Process 정보"),
   cert("F-05";"Web 명령 실행 가능성";"Web 인터페이스가 명령 실행 또는 초기 침투 경로로 악용되었는지 확인";"의심 요청, 입력값, 실행된 명령 및 Web 프로세스의 자식 프로세스를 확인";"Web/CGI 파일, HTTP 로그, Process tree, 네트워크 로그"),
   cert("F-06";"펌웨어 전반의 Hardening 미흡";"침해된 프로세스와 동일한 빌드 정책을 사용하는 다른 ELF의 공격 노출 범위를 확인";"침해 대상 ELF와 동일 Toolchain으로 빌드된 실행파일의 보호기법 상태를 확인";"ELF metadata, Build/Toolchain 설정, Decompile 결과"),
-  cert("F-07";"Firmware Update 보안";"변조되거나 비인가된 Firmware가 설치되었는지 확인";"Firmware hash, Update 시각, Signature 검증 결과 및 Version 변경을 확인";"Firmware image, Update log, Hash, Signature metadata"),
-  cert("F-08";"취약 구성요소";"알려진 취약 구성요소가 실제 침해 경로로 사용되었는지 확인";"구성요소 Version, 관련 CVE, 해당 취약 기능의 사용 여부 및 공격 흔적을 확인";"Component metadata, Version 정보, 관련 로그, 대상 Binary")
+  cert("F-07";"하드코딩·기본 Credential";"공격자가 펌웨어에 포함된 기본 또는 하드코딩 Credential을 인증에 사용했는지 확인";"영향 계정, Credential 변경 여부, 로그인 출발지 및 인증 성공 기록을 확인";"Credential 설정, 인증 로그, 계정 설정, 관련 Firmware 파일"),
+  cert("F-08";"취약·폐기 암호 알고리즘";"약한 암호 방식이 실제 보안 기능에 사용되어 침해 또는 우회에 영향을 주었는지 확인";"알고리즘 사용 위치, 관련 인증·검증·암호화 흐름 및 공격 흔적을 확인";"Crypto 설정, 관련 Firmware 파일, 인증·검증 로그, 대상 Binary")
 ]) as $cert |
 
 def hasrule($r): any($findings[]?;.rule_id==$r);
@@ -349,13 +347,13 @@ def remgroup($severity;$items): ($items|map(select(.!=null))|unique) as $x |
   remgroup("HIGH";[
     if hasrule("F-02") then "민감 Key 파일의 접근 권한을 최소화하고 공유 Key 사용 시 장비별 고유 Key로 교체" else null end,
     if hasrule("F-03") then "취약한 Unix-MD5 비밀번호 저장 방식을 안전한 해시 방식으로 변경하고 영향받는 Credential 교체" else null end,
-    if hasrule("F-04") then "Telnet 서비스를 비활성화하고 SSH 등 인증·암호화가 적용된 안전한 관리 프로토콜 사용" else null end
+    if hasrule("F-04") then "Telnet 서비스를 비활성화하고 SSH 등 인증·암호화가 적용된 안전한 관리 프로토콜 사용" else null end,
+    if hasrule("F-07") then "하드코딩·기본 Credential을 제거하고 장비별 고유 Credential을 사용하며 초기 설정 시 변경을 강제" else null end
   ]),
   remgroup("MEDIUM";[
     if (hasrule("F-01") or hasrule("F-06")) then "Firmware Toolchain 및 릴리스 빌드에 Stack Canary, PIE, Full RELRO, NX 등 공통 Binary Hardening 정책 적용" else null end,
     if hasrule("F-04") then "Telnet 구성요소의 실제 활성화 여부를 확인하고 불필요한 경우 제거 또는 비활성화" else null end,
-    if hasrule("F-07") then "Firmware Update에 전자서명 기반 출처 검증과 무결성 검사를 적용하고 검증 실패 시 설치 차단" else null end,
-    if hasrule("F-08") then "구성요소 및 Version을 관리하고 알려진 취약점이 있거나 지원 종료된 구성요소를 안전한 Version으로 업데이트" else null end
+    if hasrule("F-08") then "취약하거나 폐기된 암호 알고리즘을 현재 권고되는 안전한 암호 방식으로 교체하고 실제 사용 위치를 검토" else null end
   ]),
   remgroup("LOW";[
     if hasrule("F-01") then "보호기법이 미흡한 네트워크 서비스 ELF를 확인하고 필요한 Binary Hardening 설정을 보완" else null end,
@@ -369,7 +367,7 @@ def remgroup($severity;$items): ($items|map(select(.!=null))|unique) as $x |
   ])
 ] | sort_by(-(.severity|sev))) as $rem |
 
-([$findings[]? | select(.kind!="supplementary" and .finding_status=="IDENTIFIED" and (.confidence=="HIGH" or .confidence=="MEDIUM"))]) as $validated |
+([$findings[]? | select(.kind!="supplementary" and .severity!="INFO" and .finding_status=="IDENTIFIED" and (.confidence=="HIGH" or .confidence=="MEDIUM"))]) as $validated |
 
 def svscore: if .=="HIGH" then 100 elif .=="MEDIUM" then 60 elif .=="LOW" then 25 else 0 end;
 def cfscore: if .=="HIGH" then 100 elif .=="MEDIUM" then 70 elif .=="LOW" then 40 else 0 end;
