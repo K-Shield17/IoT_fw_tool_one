@@ -96,7 +96,15 @@ if [[ "$MODE" == "scan" ]]; then
       git clone --depth 1 https://github.com/devttys0/sasquatch.git "$SASQUATCH_DIR" || true
     fi
 
-    if [[ -x "$SASQUATCH_DIR/build.sh" ]] && (cd "$SASQUATCH_DIR" && ./build.sh); then
+    if [[ -x "$SASQUATCH_DIR/build.sh" ]] && (
+      cd "$SASQUATCH_DIR" 
+
+      if ! grep -q "s/-Werror//g" build.sh; then
+        sed -i '/cd squashfs-tools/a sed -i '\''s/-Werror//g'\'' Makefile' build.sh 
+      fi
+      
+      ./build.sh
+    ); then
       hash -r 2>/dev/null || true
       if has sasquatch; then
         ln -sf "$(command -v sasquatch)" "$LOCAL_BIN/sasquatch"
