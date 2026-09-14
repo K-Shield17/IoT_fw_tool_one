@@ -532,9 +532,9 @@ else ([.findings[] |
   "<section class=\"finding "+$c+"\"><h3>"+(.id|e)+" · "+(.title|e)+" ["+(.severity|e)+"]</h3>"+details(.)+"</section>"
 ]|join("")) end)+
 
-"<h2>8. CERT / DFIR 활용 관점</h2><table><tr><th>관련 Finding</th><th>발견 대상</th><th>사고 대응 관점</th><th>사고 발생 시 확인사항</th><th>권장 증적</th></tr>"+
-(if (.cert_dfir|length)==0 then "<tr><td colspan=\"5\">현재 Finding에서 별도 CERT/DFIR 매핑 항목이 생성되지 않았습니다.</td></tr>"
-else ([.cert_dfir[]|"<tr>"+td(.id+" · "+.finding)+"<td>"+paths(.locations//[])+"</td>"+td(.meaning)+td(.check)+td(.artifacts)+"</tr>"]|join("")) end)+"</table>"+
+"<h2>8. CERT / DFIR 활용 관점</h2><table><tr><th>관련 Finding</th><th>사고 대응 관점</th><th>사고 발생 시 확인사항</th><th>권장 증적</th></tr>"+
+(if (.cert_dfir|length)==0 then "<tr><td colspan=\"4\">현재 Finding에서 별도 CERT/DFIR 매핑 항목이 생성되지 않았습니다.</td></tr>"
+else ([.cert_dfir[]|"<tr>"+td(.id+" · "+.finding)+td(.meaning)+td(.check)+td(.artifacts)+"</tr>"]|join("")) end)+"</table>"+
 "<div class=\"note\">CERT / DFIR 항목은 실제 발생한 Finding Rule에 따라 생성된다. 정상 펌웨어에 존재하는 서비스·설정·Key 파일은 그 자체로 IOC가 아니며 실제 침해 판단에는 로그, 서비스 상태 및 네트워크 행위 등 추가 증거가 필요하다.</div>"+
 
 "<h2>9. OWASP IoT Top 10 증거 매핑</h2><p class=\"subtitle\">OWASP IoT Top 10 전체 항목이 아니라 현재 펌웨어에서 Security Finding 또는 관련 정적 Evidence가 확인된 항목만 표시한다.</p>"+
