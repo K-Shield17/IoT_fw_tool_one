@@ -100,7 +100,10 @@ if [[ "$MODE" == "scan" ]]; then
       cd "$SASQUATCH_DIR" 
 
       if ! grep -q "s/-Werror//g" build.sh; then
-        sed -i '/cd squashfs-tools/a sed -i '\''s/-Werror//g'\'' Makefile' build.sh 
+        sed -i '/cd squashfs-tools/a \
+        sed -i '\''s/-Werror//g'\'' Makefile
+        sed -i '\''s/void sigwinch_handler()/void sigwinch_handler(int sig)/'\'' unsquashfs.c
+        sed -i '\''s/void sigalrm_handler()/void sigalrm_handler(int sig)/'\'' unsquashfs.c' build.sh
       fi
       
       ./build.sh
