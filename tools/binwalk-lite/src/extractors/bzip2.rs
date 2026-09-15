@@ -35,7 +35,7 @@ pub fn bzip2_extractor() -> Extractor {
 pub fn bzip2_decompressor(
     file_data: &[u8],
     offset: usize,
-    output_directory: Option<&str>,
+    output_directory: Option<&string>,
 ) -> ExtractionResult {
     // Size of decompression buffer
     const BLOCK_SIZE: usize = 900 * 1024;
