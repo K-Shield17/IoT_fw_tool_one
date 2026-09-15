@@ -157,7 +157,7 @@ summary() {
         ($s.overall_risk // "-")
       ] | @tsv' "$json" 2>/dev/null)" || vals=''
     if [[ -n "$vals" ]]; then
-      IFS=$'\t' read -r cr hi md lo tot sysn assets ev risk <<< "$vals"
+      IFS=$'\t' read -r hi md lo tot sysn assets ev risk <<< "$vals"
     else
       note="report.json parse failed"
     fi
@@ -174,9 +174,9 @@ summary() {
   _b_line "$LT" "$RT"
   printf '  %s%s%s %s%-9s%s%s%4d%s  %s%-7s%s%s%4d%s  %s%-4s%s%s%4d%s%*s %s%s%s\n' \
     "$DD" "$VT" "$R" \
-    "$RD"  "CRITICAL" "$R" "$RD"  "$cr" "$R" \
     "$RD"  "HIGH"     "$R" "$RD"  "$hi" "$R" \
     "$Y"   "MED"      "$R" "$Y"   "$md" "$R" \
+    "$B"  "LOW" "$R" "$B"  "$lo" "$R" \
     18 "" "$DD" "$VT" "$R"
   _b_row "$(printf 'findings %-4d systemic %-3d ELF %-6d owasp %d' "$tot" "$sysn" "$assets" "$ev")"
   [[ -n "$note" ]] && printf '  %s%s%s %s%-*s%s %s%s%s\n' \
