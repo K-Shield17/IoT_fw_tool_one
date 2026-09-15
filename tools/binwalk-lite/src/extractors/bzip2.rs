@@ -1,7 +1,29 @@
+use crate::common::is_offset_safe;
 use crate::extractors::common::{Chroot, ExtractionResult, Extractor, ExtractorType};
 use bzip2::{Decompress, Status};
 
 /// Defines the internal extractor function for decompressing BZIP2 files
+///
+/// ```
+/// use std::io::ErrorKind;
+/// use std::process::Command;
+/// use binwalk::extractors::common::ExtractorType;
+/// use binwalk::extractors::bzip2::bzip2_extractor;
+///
+/// match bzip2_extractor().utility {
+///     ExtractorType::None => panic!("Invalid extractor type of None"),
+///     ExtractorType::Internal(func) => println!("Internal extractor OK: {:?}", func),
+///     ExtractorType::External(cmd) => {
+///         if let Err(e) = Command::new(&cmd).output() {
+///             if e.kind() == ErrorKind::NotFound {
+///                 panic!("External extractor '{}' not found", cmd);
+///             } else {
+///                 panic!("Failed to execute external extractor '{}': {}", cmd, e);
+///             }
+///         }
+///     }
+/// }
+/// ```
 pub fn bzip2_extractor() -> Extractor {
     Extractor {
         utility: ExtractorType::Internal(bzip2_decompressor),
@@ -13,7 +35,7 @@ pub fn bzip2_extractor() -> Extractor {
 pub fn bzip2_decompressor(
     file_data: &[u8],
     offset: usize,
-    output_directory: Option<&String>,
+    output_directory: Option<&str>,
 ) -> ExtractionResult {
     // Size of decompression buffer
     const BLOCK_SIZE: usize = 900 * 1024;
@@ -29,6 +51,8 @@ pub fn bzip2_decompressor(
     let bzip2_data = &file_data[offset..];
     let mut decompressed_buffer = [0; BLOCK_SIZE];
     let mut decompressor = Decompress::new(false);
+    let available_data = bzip2_data.len();
+    let mut previous_offset = None;
 
     /*
      * Loop through all compressed data and decompress it.
@@ -40,7 +64,9 @@ pub fn bzip2_decompressor(
      * The advantage is that not only are we 100% sure that this data is valid BZIP2 data, but we
      * can also determine the exact size of the BZIP2 data.
      */
-    loop {
+    while is_offset_safe(available_data, stream_offset, previous_offset) {
+        previous_offset = Some(stream_offset);
+
         // Decompress a block of data
         match decompressor.decompress(&bzip2_data[stream_offset..], &mut decompressed_buffer) {
             Err(_) => {
