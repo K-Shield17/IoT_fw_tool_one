@@ -172,7 +172,7 @@ if [[ -n "$default_cred_evidence" ]]; then
 fi
 
 # F-08: Weak / Deprecated Cryptography
-weak_crypto_evidence="$(jq -c 'select(.source=="firmwalker" and .type=="crypto_weak_context")' "$EVIDENCE" || true)"
+weak_crypto_evidence="$(jq -c 'select(.source=="firmwalker" and .type=="crypto_weak_applied")' "$EVIDENCE" || true)"
 if [[ -n "$weak_crypto_evidence" ]]; then
   filtered_crypto="$TMP/f08_crypto.jsonl"; : > "$filtered_crypto"
   while IFS= read -r crypto_line; do
