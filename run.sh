@@ -147,10 +147,9 @@ summary() {
       (.summary // {}) as $s |
       ((.findings // .security_cases) // []) as $c |
       def cnt($sev): [$c[]? | select((.severity // "") == $sev)] | length;
-      [ ($s.critical // $s.critical_cases // cnt("CRITICAL")),
-        ($s.high     // $s.high_cases     // cnt("HIGH")),
+      [ ($s.high     // $s.high_cases     // cnt("HIGH")),
         ($s.medium   // $s.medium_cases   // cnt("MEDIUM")),
-        ($s.low      // cnt("LOW")),
+        ($s.low      // $s.low_cases   // cnt("LOW")),
         ($s.findings // $s.security_cases // ($c|length)),
         ((.systemic_findings // [])|length),
         ($s.analyzed_elf // $s.analyzed_assets // (.metadata.asset_count // 0)),
