@@ -16,6 +16,7 @@ while IFS=$'\t' read -r category severity path evidence; do
     crypto) property="crypto_material" ;;
     crypto_weak_indicator) property="weak_crypto_indicator" ;;
     crypto_weak_context) property="weak_crypto_security_context" ;;
+    crypto_weak_applied) property="weak_crypto_applied" ;;
     ssh) property="ssh_material" ;;
     sensitive_pattern) property="sensitive_pattern" ;;
     config) property="configuration_file" ;;
