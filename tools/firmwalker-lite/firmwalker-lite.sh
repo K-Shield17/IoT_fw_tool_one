@@ -198,22 +198,46 @@ done < <(existing_dirs "${WEB_DIRS[@]}")
 # ---------------------------------------------------------------------------
 # Firmware / package update mechanisms
 # ---------------------------------------------------------------------------
-msg "***Firmware and package update mechanism indicators***"
+msg "***Firmware/package update mechanism indicators***"
 
-# Strong indicators that directly identify firmware/package update mechanisms.
-# Generic words such as "upgrade", "flash", "signature", "verify", and
-# "checksum" are intentionally excluded to reduce false positives.
-UPDATE_STRONG_PATTERNS=(
+# High-confidence update actions.
+UPDATE_ACTION_PATTERNS=(
   'sysupgrade'
   'fw_upgrade'
   'firmware upgrade'
   'firmware update'
   'mtd write'
-  'opkg'
 )
 
-# These are only meaningful as update-security evidence after an
-# update/package-management mechanism has already been identified.
+# Package/update-manager commands.
+PACKAGE_UPDATE_PATTERNS=(
+  'opkg update'
+  'opkg upgrade'
+  'apt-get update'
+  'apt-get upgrade'
+  'apt update'
+  'apt upgrade'
+  'yum update'
+  'dnf update'
+)
+
+# Download utilities. These are not update evidence by themselves.
+DOWNLOAD_PATTERNS=(
+  'wget '
+  'curl '
+)
+
+# Firmware/update-related context required around a download operation.
+UPDATE_CONTEXT_PATTERNS=(
+  'firmware'
+  'upgrade'
+  'update'
+  'sysupgrade'
+  'flash'
+  'image'
+)
+
+# Verification is supplementary evidence only.
 UPDATE_SECURITY_PATTERNS=(
   'SHA256'
   'SHA512'
@@ -231,23 +255,52 @@ while IFS= read -r d; do
     size=$(stat -c '%s' "$p" 2>/dev/null || echo 0)
     (( size <= 4194304 )) || continue
 
-    matched=false
+    r="$(relpath "$p")"
+    update_related=false
 
-    # Strong firmware/package-update indicators.
-    for pattern in "${UPDATE_STRONG_PATTERNS[@]}"; do
+    # 1. Direct firmware-update actions.
+    for pattern in "${UPDATE_ACTION_PATTERNS[@]}"; do
       if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
-        emit update INFO "$(relpath "$p")" \
-          "firmware/package-update indicator: $pattern"
-        matched=true
+        emit update INFO "$r" \
+          "firmware-update action: $pattern"
+        update_related=true
       fi
     done
 
-    # Verification/security indicators are recorded only when the same file
-    # already contains a strong update/package-management indicator.
-    if [[ "$matched" == true ]]; then
+    # 2. Explicit package/update-manager commands.
+    for pattern in "${PACKAGE_UPDATE_PATTERNS[@]}"; do
+      if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
+        emit update INFO "$r" \
+          "package-update action: $pattern"
+        update_related=true
+      fi
+    done
+
+    # 3. Download command + update context.
+    download_found=false
+    for pattern in "${DOWNLOAD_PATTERNS[@]}"; do
+      if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
+        download_found=true
+        break
+      fi
+    done
+
+    if [[ "$download_found" == true ]]; then
+      for ctx in "${UPDATE_CONTEXT_PATTERNS[@]}"; do
+        if grep -aIqiF -- "$ctx" "$p" 2>/dev/null; then
+          emit update INFO "$r" \
+            "update-related download mechanism: $ctx"
+          update_related=true
+          break
+        fi
+      done
+    fi
+
+    # 4. Verification evidence only when update evidence already exists.
+    if [[ "$update_related" == true ]]; then
       for pattern in "${UPDATE_SECURITY_PATTERNS[@]}"; do
         if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
-          emit update INFO "$(relpath "$p")" \
+          emit update INFO "$r" \
             "update verification/crypto indicator: $pattern"
         fi
       done
@@ -260,28 +313,10 @@ while IFS= read -r d; do
          -o -name '*.cgi' \
          -o -name '*.lua' \
          -o -name '*.conf' \
-         -o -name '*.cfg' \
-         -o -name 'opkg.conf' \
-         -o -name 'distfeeds.conf' \
-         -o -name 'customfeeds.conf' \) \
+         -o -name '*.cfg' \) \
       -print0 2>/dev/null
   )
 done < <(existing_dirs "${UPDATE_DIRS[@]}")
-
-# Explicit OpenWrt/opkg package-update configuration files.
-# Their presence is useful update-mechanism evidence even when they do not
-# contain one of the strong strings above.
-for rel in \
-  /etc/opkg.conf \
-  /etc/opkg/distfeeds.conf \
-  /etc/opkg/customfeeds.conf
-do
-  p="$FIRMDIR$rel"
-  [[ -f "$p" ]] || continue
-
-  emit update INFO "$rel" \
-    "package/update configuration present: $(basename "$rel")"
-done
 
 # ---------------------------------------------------------------------------
 # Components / version hints
