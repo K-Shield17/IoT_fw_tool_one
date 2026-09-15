@@ -196,26 +196,92 @@ while IFS= read -r d; do
 done < <(existing_dirs "${WEB_DIRS[@]}")
 
 # ---------------------------------------------------------------------------
-# Firmware update mechanisms
+# Firmware / package update mechanisms
 # ---------------------------------------------------------------------------
-msg "***Firmware update mechanism indicators***"
-UPDATE_PATTERNS=('sysupgrade' 'fw_upgrade' 'firmware upgrade' 'firmware update' 'upgrade' 'mtd write' 'flash' 'signature' 'verify' 'checksum')
-UPDATE_SECURITY_PATTERNS=('SHA256' 'SHA512' 'RSA' 'ECDSA' 'signature' 'verify' 'certificate' 'public key')
+msg "***Firmware and package update mechanism indicators***"
+
+# Strong indicators that directly identify firmware/package update mechanisms.
+# Generic words such as "upgrade", "flash", "signature", "verify", and
+# "checksum" are intentionally excluded to reduce false positives.
+UPDATE_STRONG_PATTERNS=(
+  'sysupgrade'
+  'fw_upgrade'
+  'firmware upgrade'
+  'firmware update'
+  'mtd write'
+  'opkg'
+)
+
+# These are only meaningful as update-security evidence after an
+# update/package-management mechanism has already been identified.
+UPDATE_SECURITY_PATTERNS=(
+  'SHA256'
+  'SHA512'
+  'RSA'
+  'ECDSA'
+  'signature'
+  'verify'
+  'checksum'
+  'certificate'
+  'public key'
+)
 
 while IFS= read -r d; do
   while IFS= read -r -d '' p; do
-    size=$(stat -c '%s' "$p" 2>/dev/null || echo 0); (( size <= 4194304 )) || continue
+    size=$(stat -c '%s' "$p" 2>/dev/null || echo 0)
+    (( size <= 4194304 )) || continue
+
     matched=false
-    for pattern in "${UPDATE_PATTERNS[@]}"; do
-      if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then emit update INFO "$(relpath "$p")" "firmware-update indicator: $pattern"; matched=true; fi
+
+    # Strong firmware/package-update indicators.
+    for pattern in "${UPDATE_STRONG_PATTERNS[@]}"; do
+      if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
+        emit update INFO "$(relpath "$p")" \
+          "firmware/package-update indicator: $pattern"
+        matched=true
+      fi
     done
+
+    # Verification/security indicators are recorded only when the same file
+    # already contains a strong update/package-management indicator.
     if [[ "$matched" == true ]]; then
       for pattern in "${UPDATE_SECURITY_PATTERNS[@]}"; do
-        if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then emit update INFO "$(relpath "$p")" "update verification/crypto indicator: $pattern"; fi
+        if grep -aIqiF -- "$pattern" "$p" 2>/dev/null; then
+          emit update INFO "$(relpath "$p")" \
+            "update verification/crypto indicator: $pattern"
+        fi
       done
     fi
-  done < <(find "$d" -maxdepth 4 -type f \( -perm /111 -o -name '*.sh' -o -name '*.cgi' -o -name '*.lua' -o -name '*.conf' -o -name '*.cfg' \) -print0 2>/dev/null)
+
+  done < <(
+    find "$d" -maxdepth 4 -type f \
+      \( -perm /111 \
+         -o -name '*.sh' \
+         -o -name '*.cgi' \
+         -o -name '*.lua' \
+         -o -name '*.conf' \
+         -o -name '*.cfg' \
+         -o -name 'opkg.conf' \
+         -o -name 'distfeeds.conf' \
+         -o -name 'customfeeds.conf' \) \
+      -print0 2>/dev/null
+  )
 done < <(existing_dirs "${UPDATE_DIRS[@]}")
+
+# Explicit OpenWrt/opkg package-update configuration files.
+# Their presence is useful update-mechanism evidence even when they do not
+# contain one of the strong strings above.
+for rel in \
+  /etc/opkg.conf \
+  /etc/opkg/distfeeds.conf \
+  /etc/opkg/customfeeds.conf
+do
+  p="$FIRMDIR$rel"
+  [[ -f "$p" ]] || continue
+
+  emit update INFO "$rel" \
+    "package/update configuration present: $(basename "$rel")"
+done
 
 # ---------------------------------------------------------------------------
 # Components / version hints
